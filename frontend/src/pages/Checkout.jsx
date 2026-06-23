@@ -259,7 +259,7 @@ export default function Checkout() {
       .catch(() => { setCoupon(null); sessionStorage.removeItem("glowcamp_coupon"); });
   }, [subtotal, coupon?.code]); // eslint-disable-line
 
-  if (items.length === 0 && !createdOrder) {
+  if (items.length === 0 && !createdOrder && !processing) {
     return (
       <div className="min-h-screen bg-[#0A0A0A]">
         <CheckoutHeader />
@@ -357,9 +357,9 @@ export default function Checkout() {
     }
     setProcessingDone(true);
     sessionStorage.removeItem("glowcamp_coupon");
-    clear();
-    // Tiny extra delay so user sees the checkmark
+    // Tiny extra delay so user sees the checkmark, then clear & navigate together
     setTimeout(() => {
+      clear();
       nav(`/thank-you/${order.order_number}`, { state: { order } });
     }, 700);
   }
@@ -378,8 +378,8 @@ export default function Checkout() {
       await Promise.all([capP, minDelay]);
       setProcessingDone(true);
       sessionStorage.removeItem("glowcamp_coupon");
-      clear();
       setTimeout(() => {
+        clear();
         nav(`/thank-you/${createdOrder.order_number}`, { state: { order: { ...createdOrder, payment_status: "paid" } } });
       }, 700);
     } catch (e) {

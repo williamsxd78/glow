@@ -75,6 +75,9 @@ export default function Settings() {
       </div>
 
       <Section title="Store Region">
+        <Field full label="Site URL (used in emails, e.g. https://glowcamp.com)">
+          <input className={inputCls} value={s.site_url || ""} onChange={(e) => up("site_url", e.target.value)} placeholder="https://yourdomain.com" />
+        </Field>
         <Field label="Store Country">
           <select className={inputCls} value={s.store_country} onChange={(e) => up("store_country", e.target.value)}>
             <option value="US">USA (US states, ZIP Code)</option>

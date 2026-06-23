@@ -81,24 +81,33 @@ class EmailTemplate(BaseModel):
 
 class EmailTemplates(BaseModel):
     order_confirmation: EmailTemplate = EmailTemplate(
-        subject="Your GlowCamp Order is Confirmed",
-        body="<h2>Thank you {{name}}!</h2><p>Your order {{order_id}} has been confirmed.</p>",
+        subject="Your GlowCamp order is confirmed",
+        body=(
+            "<div style=\"font-family:Helvetica,Arial,sans-serif;max-width:560px;margin:0 auto;background:#0A0A0A;color:#fff;padding:32px;border-radius:16px;\">"
+            "<h2 style=\"font-family:Georgia,serif;color:#fff;font-weight:normal;margin:0 0 8px;\">Thank you, {{name}}!</h2>"
+            "<p style=\"color:#bbb;margin:0 0 24px;\">Your order <b style=\"color:#FFAA00;\">{{order_id}}</b> has been confirmed. "
+            "We'll send another email when it's on the way.</p>"
+            "<a href=\"{{tracking_url}}\" style=\"display:inline-block;background:#FFAA00;color:#0A0A0A;font-weight:600;text-decoration:none;padding:14px 22px;border-radius:999px;\">Track your order</a>"
+            "<p style=\"color:#666;font-size:12px;margin:24px 0 0;\">Total: ${{total}} · {{item_count}} item(s)</p>"
+            "<p style=\"color:#666;font-size:11px;margin:20px 0 0;\">If the button doesn't work, paste this link into your browser:<br><span style=\"color:#FFAA00;word-break:break-all;\">{{tracking_url}}</span></p>"
+            "</div>"
+        ),
     )
     payment_confirmation: EmailTemplate = EmailTemplate(
-        subject="Payment Received - GlowCamp",
-        body="<p>We have received your payment for order {{order_id}}.</p>",
+        subject="Payment received · GlowCamp {{order_id}}",
+        body="<p>Hi {{name}},</p><p>We've received your payment for order <b>{{order_id}}</b>. <a href=\"{{tracking_url}}\">Track your order</a>.</p>",
     )
     order_shipped: EmailTemplate = EmailTemplate(
-        subject="Your GlowCamp Order Has Shipped",
-        body="<p>Order {{order_id}} is on its way!</p>",
+        subject="Your GlowCamp order has shipped",
+        body="<p>Hi {{name}},</p><p>Your order <b>{{order_id}}</b> is on its way. <a href=\"{{tracking_url}}\">Follow it live</a>.</p>",
     )
     order_delivered: EmailTemplate = EmailTemplate(
-        subject="GlowCamp Delivered",
-        body="<p>Your order {{order_id}} has been delivered. Enjoy the glow!</p>",
+        subject="GlowCamp delivered",
+        body="<p>Hi {{name}},</p><p>Your order <b>{{order_id}}</b> has been delivered. Enjoy the glow! <a href=\"{{tracking_url}}\">View order</a>.</p>",
     )
     order_cancelled: EmailTemplate = EmailTemplate(
-        subject="GlowCamp Order Cancelled",
-        body="<p>Order {{order_id}} has been cancelled.</p>",
+        subject="Your GlowCamp order was cancelled",
+        body="<p>Hi {{name}},</p><p>Order <b>{{order_id}}</b> has been cancelled. Reply to this email if this was unexpected.</p>",
     )
 
 
@@ -201,6 +210,7 @@ class Settings(BaseModel):
         "Hi, I want to know more about GlowCamp 3D Printed Flame Lamp."
     )
     social: SocialLinks = Field(default_factory=SocialLinks)
+    site_url: str = ""  # public frontend URL, used in email links e.g. https://glowcamp.com
     store_country: Literal["US", "IN", "CUSTOM"] = "US"
     custom_states: List[str] = Field(default_factory=list)
     updated_at: str = Field(default_factory=_now)

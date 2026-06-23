@@ -201,10 +201,28 @@ async def create_order(payload: OrderCreate):
     )
     await db.orders.insert_one(order.model_dump())
 
+    # Try send confirmation email with rich context including tracking link
     try:
         tpl = s.email_templates.order_confirmation
-        body = render(tpl.body, {"name": order.full_name, "order_id": order.order_number})
-        send_email(s.smtp.model_dump(), order.email, tpl.subject, body)
+        base_url = (s.site_url or "").rstrip("/")
+        tracking_url = (
+            f"{base_url}/track-order?o={order.order_number}&k={order.tracking_token}"
+            if base_url
+            else f"/track-order?o={order.order_number}&k={order.tracking_token}"
+        )
+        ctx = {
+            "name": order.full_name,
+            "order_id": order.order_number,
+            "tracking_url": tracking_url,
+            "tracking_token": order.tracking_token,
+            "total": f"{order.total:.2f}",
+            "subtotal": f"{order.subtotal:.2f}",
+            "shipping": f"{order.shipping:.2f}",
+            "discount": f"{order.discount:.2f}",
+            "item_count": sum(i.quantity for i in order.items),
+        }
+        body = render(tpl.body, ctx)
+        send_email(s.smtp.model_dump(), order.email, render(tpl.subject, ctx), body)
     except Exception as e:
         logger.warning("Email send skipped: %s", e)
     return order
