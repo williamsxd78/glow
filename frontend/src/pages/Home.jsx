@@ -8,7 +8,6 @@ import Lifestyle from "../components/sections/Lifestyle";
 import Gallery from "../components/sections/Gallery";
 import Specs from "../components/sections/Specs";
 import Reviews from "../components/sections/Reviews";
-import Faq from "../components/sections/Faq";
 import CountdownStrip from "../components/sections/Countdown";
 
 export default function Home() {
@@ -24,7 +23,6 @@ export default function Home() {
       <Gallery />
       <Specs />
       <Reviews />
-      <Faq />
     </main>
   );
 }

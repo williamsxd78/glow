@@ -10,7 +10,6 @@ import { useSettings, useReviews } from "../lib/hooks";
 import { useCart } from "../lib/cart";
 import Reviews from "../components/sections/Reviews";
 import Faq from "../components/sections/Faq";
-import HowItsMade from "../components/sections/HowItsMade";
 import VideoSection from "../components/sections/VideoSection";
 
 const FEATURE_ICONS = [
@@ -294,7 +293,6 @@ export default function ProductPage() {
       </section>
 
       <VideoSection />
-      <HowItsMade />
       <Reviews />
       <Faq />
     </main>
