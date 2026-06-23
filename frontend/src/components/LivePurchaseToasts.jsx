@@ -76,7 +76,7 @@ export default function LivePurchaseToasts() {
   if (hidden) return null;
 
   return (
-    <div className="fixed z-30 bottom-24 left-3 sm:bottom-6 sm:left-6 max-w-[300px] sm:max-w-sm pointer-events-none">
+    <div className="fixed z-30 left-2 right-2 sm:left-6 sm:right-auto bottom-3 sm:bottom-6 sm:max-w-sm pointer-events-none">
       <AnimatePresence>
         {event && (
           <motion.div
@@ -85,9 +85,9 @@ export default function LivePurchaseToasts() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 18, scale: 0.97 }}
             transition={{ duration: 0.35, ease: [0.2, 0.7, 0.2, 1] }}
-            className="pointer-events-auto bg-[#0E0E0E]/95 backdrop-blur border border-ink-500/70 rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.55)] p-3 pr-4 flex items-center gap-3 glow-amber-soft"
+            className="pointer-events-auto bg-[#0E0E0E] border border-amber-500/30 rounded-2xl shadow-[0_18px_50px_rgba(0,0,0,0.7)] p-2.5 pr-3 sm:p-3 sm:pr-4 flex items-center gap-3 max-w-[320px] sm:max-w-none mx-auto sm:mx-0"
           >
-            <div className="relative w-11 h-11 rounded-xl overflow-hidden border border-ink-500/60 shrink-0 bg-[#161616]">
+            <div className="relative w-10 h-10 sm:w-11 sm:h-11 rounded-xl overflow-hidden border border-ink-500/60 shrink-0 bg-[#161616]">
               {s?.product?.main_image && (
                 <img src={s.product.main_image} alt="" className="w-full h-full object-cover" />
               )}
@@ -96,17 +96,17 @@ export default function LivePurchaseToasts() {
               </span>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-[13px] leading-snug text-white">
+              <p className="text-[12px] sm:text-[13px] leading-snug text-white truncate">
                 <b>{event.name}</b> from <span className="text-amber-500">{event.state}</span>
                 <span className="text-neutral-400"> just bought</span>
               </p>
-              <p className="text-[11px] text-neutral-500 truncate">
-                {event.pack.emoji} {event.pack.label} · {event.time}
+              <p className="text-[10px] sm:text-[11px] text-neutral-500 truncate">
+                {event.pack.label} · {event.time}
               </p>
             </div>
             <button
               onClick={() => setEvent(null)}
-              className="text-neutral-600 hover:text-neutral-300 -mr-1"
+              className="text-neutral-600 hover:text-neutral-300 shrink-0"
               aria-label="Dismiss"
             >
               <X size={14} />

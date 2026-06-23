@@ -6,7 +6,7 @@ import {
   Boxes, Flame, Wind, Trees, Home as HomeIcon, Gift, Plug, Camera,
 } from "lucide-react";
 import { toast } from "sonner";
-import { useSettings, useReviews, useGallery } from "../lib/hooks";
+import { useSettings, useReviews } from "../lib/hooks";
 import { useCart } from "../lib/cart";
 import Reviews from "../components/sections/Reviews";
 import Faq from "../components/sections/Faq";
@@ -41,7 +41,6 @@ function Stars({ n, size = 14 }) {
 export default function ProductPage() {
   const { data: s } = useSettings();
   const { data: reviews } = useReviews();
-  const { data: gallery } = useGallery();
   const { add } = useCart();
   const nav = useNavigate();
 
@@ -50,15 +49,15 @@ export default function ProductPage() {
   const [activeImg, setActiveImg] = useState(0);
 
   const images = useMemo(() => {
-    const arr = [];
-    if (s?.product?.main_image) arr.push({ url: s.product.main_image, alt: s.product.name });
-    (gallery || []).forEach((g) => {
-      if (g.url !== s?.product?.main_image) arr.push({ url: g.url, alt: g.alt });
-    });
-    return arr;
-  }, [s, gallery]);
+    if (!s?.product?.main_image) return [];
+    const main = { url: s.product.main_image, alt: s.product.name };
+    // Only allow photos the admin has explicitly marked for the product
+    // (we treat the gallery as lifestyle by default and DON'T mix it into the
+    // primary product carousel — keeps the hero shot focused on the lamp).
+    return [main];
+  }, [s]);
 
-  useEffect(() => { setActiveImg(0); }, [images.length]);
+  useEffect(() => { setActiveImg(0); }, [s?.product?.main_image]);
 
   if (!s) {
     return <div className="min-h-[60vh] flex items-center justify-center text-neutral-500">Loading…</div>;
