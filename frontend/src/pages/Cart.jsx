@@ -89,7 +89,7 @@ export default function Cart() {
           <p className="text-sm text-neutral-400 mb-8 max-w-md mx-auto">
             Add a GlowCamp lamp and turn any corner into a tiny cabin moment.
           </p>
-          <Link to="/" className="btn-primary inline-flex">Continue Shopping <ArrowRight size={16} /></Link>
+          <Link to="/product" className="btn-primary inline-flex">Continue Shopping <ArrowRight size={16} /></Link>
         </div>
       </main>
     );

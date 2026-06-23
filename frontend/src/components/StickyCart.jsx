@@ -26,8 +26,7 @@ export default function StickyCart() {
   const single = s.offers.find((o) => o.key === "single") || s.offers[0];
 
   function buyNow() {
-    if (items.length === 0) add(single, 1);
-    nav("/checkout");
+    nav("/product");
   }
 
   return (

@@ -1,4 +1,5 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowRight, PlayCircle, Sparkles, Wind, Heart, Home, Boxes } from "lucide-react";
 import { useSettings } from "../../lib/hooks";
@@ -6,6 +7,7 @@ import { TID } from "../../constants/testIds";
 
 export default function Hero() {
   const { data: s } = useSettings();
+  const nav = useNavigate();
   if (!s) return null;
   const p = s.product;
 
@@ -57,7 +59,7 @@ export default function Hero() {
           <div className="flex flex-wrap gap-3">
             <button
               data-testid={TID.heroOrder}
-              onClick={() => scrollTo("offers")}
+              onClick={() => nav("/product")}
               className="btn-primary"
             >
               Order Now <ArrowRight size={18} />

@@ -7,7 +7,6 @@ import Features from "../components/sections/Features";
 import Lifestyle from "../components/sections/Lifestyle";
 import Gallery from "../components/sections/Gallery";
 import Specs from "../components/sections/Specs";
-import Offers from "../components/sections/Offers";
 import Reviews from "../components/sections/Reviews";
 import Faq from "../components/sections/Faq";
 import CountdownStrip from "../components/sections/Countdown";
@@ -24,7 +23,6 @@ export default function Home() {
       <Lifestyle />
       <Gallery />
       <Specs />
-      <Offers />
       <Reviews />
       <Faq />
     </main>

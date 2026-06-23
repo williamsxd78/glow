@@ -24,7 +24,7 @@ export default function Footer() {
         <div>
           <div className="text-xs text-amber-500 tracking-[0.2em] uppercase mb-4">Shop</div>
           <ul className="space-y-2 text-sm text-neutral-300">
-            <li><a href="/#offers" className="hover:text-amber-500">Buy GlowCamp</a></li>
+            <li><Link to="/product" className="hover:text-amber-500">Buy GlowCamp</Link></li>
             <li><Link to="/cart" className="hover:text-amber-500">Your Cart</Link></li>
             <li><Link to="/track-order" className="hover:text-amber-500">Track Order</Link></li>
           </ul>

@@ -1,15 +1,13 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import { useSettings } from "../../lib/hooks";
 
 export default function VideoSection() {
   const { data: s } = useSettings();
+  const nav = useNavigate();
   if (!s) return null;
-
-  function scrollTo(id) {
-    document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
-  }
 
   return (
     <section className="py-20 md:py-32 bg-[#070707] relative overflow-hidden">
@@ -49,7 +47,7 @@ export default function VideoSection() {
           <p className="text-base sm:text-lg text-neutral-300 leading-relaxed mb-8 max-w-xl">
             {s.video_caption}
           </p>
-          <button onClick={() => scrollTo("offers")} className="btn-primary">
+          <button onClick={() => nav("/product")} className="btn-primary">
             Order This Glow Lamp <ArrowRight size={18} />
           </button>
         </motion.div>

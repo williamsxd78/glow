@@ -9,8 +9,10 @@ import AnnouncementBar from "@/components/AnnouncementBar";
 import StickyCart from "@/components/StickyCart";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import ScrollToTop from "@/components/ScrollToTop";
+import LivePurchaseToasts from "@/components/LivePurchaseToasts";
 
 import Home from "@/pages/Home";
+import Product from "@/pages/Product";
 import Cart from "@/pages/Cart";
 import Checkout from "@/pages/Checkout";
 import ThankYou from "@/pages/ThankYou";
@@ -44,6 +46,7 @@ function Shell() {
       {!minimal && <Footer />}
       <StickyCart />
       <WhatsAppButton />
+      <LivePurchaseToasts />
     </>
   );
 }
@@ -57,6 +60,7 @@ export default function App() {
         <Routes>
           <Route element={<Shell />}>
             <Route path="/" element={<Home />} />
+            <Route path="/product" element={<Product />} />
             <Route path="/cart" element={<Cart />} />
             <Route path="/checkout" element={<Checkout />} />
             <Route path="/thank-you/:id" element={<ThankYou />} />
