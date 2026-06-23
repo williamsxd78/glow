@@ -29,7 +29,7 @@ export default function Dashboard() {
         <Card icon={ShoppingBag} label="Total Orders" value={d.total_orders} />
         <Card icon={DollarSign} label="Revenue" value={`$${d.total_revenue}`} hint="excluding cancelled" />
         <Card icon={AlertCircle} label="Pending" value={d.pending_orders} hint="placed / confirmed / packed" />
-        <Card icon={Truck} label="In Transit" value={d.shipped_orders} />
+        <Card icon={Truck} label="Shipped / In Transit" value={d.shipped_orders} />
         <Card icon={CheckCircle} label="Delivered" value={d.delivered_orders} />
         <Card icon={CheckCircle} label="Paid Orders" value={d.paid_orders} />
         <Card icon={Package} label="Stock" value={d.stock} />
