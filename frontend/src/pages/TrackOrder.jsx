@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import {
   Search, Package, ClipboardCheck, Box, Truck, MapPin, CheckCircle2,
   ChevronRight, MessageCircle, Mail, Phone,
@@ -77,10 +77,24 @@ function TimelineRow({ step, status, last }) {
 
 export default function TrackOrder() {
   const { data: s } = useSettings();
-  const [orderNumber, setOrderNumber] = useState("");
+  const [params] = useSearchParams();
+  const [orderNumber, setOrderNumber] = useState(params.get("o") || "");
   const [phone, setPhone] = useState("");
   const [order, setOrder] = useState(null);
   const [busy, setBusy] = useState(false);
+
+  // Auto-load when ?o=GC-...&k=TOKEN is present (Shopify-style deep link)
+  useEffect(() => {
+    const o = params.get("o");
+    const k = params.get("k");
+    if (o && k) {
+      setBusy(true);
+      api.get("/orders/track", { params: { order_number: o, key: k } })
+        .then(({ data }) => setOrder(data))
+        .catch((err) => toast.error(apiErrorMessage(err, "Tracking link is invalid or expired")))
+        .finally(() => setBusy(false));
+    }
+  }, [params]);
 
   async function submit(e) {
     e.preventDefault();

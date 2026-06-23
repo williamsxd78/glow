@@ -10,6 +10,7 @@ import { api, apiErrorMessage } from "../lib/api";
 import { TID } from "../constants/testIds";
 import { statesFor, pincodeLabel } from "../lib/regions";
 import PayPalButton from "../components/PayPalButton";
+import PaymentProcessing from "../components/PaymentProcessing";
 import CheckoutHeader from "../components/CheckoutHeader";
 
 /* ============================== Floating Label Input ============================== */
@@ -247,6 +248,8 @@ export default function Checkout() {
   });
   const [err, setErr] = useState({});
   const [busy, setBusy] = useState(false);
+  const [processing, setProcessing] = useState(false);
+  const [processingDone, setProcessingDone] = useState(false);
   const [createdOrder, setCreatedOrder] = useState(null);
 
   useEffect(() => {
@@ -342,11 +345,23 @@ export default function Checkout() {
 
   async function submitNonPaypal(e) {
     e.preventDefault();
-    const order = await placeOrder();
-    if (!order) return;
+    if (!validate()) { toast.error("Please fix the highlighted fields"); return; }
+    setProcessing(true);
+    setProcessingDone(false);
+    const minDelay = new Promise((r) => setTimeout(r, 4600));
+    const orderP = placeOrder();
+    const [order] = await Promise.all([orderP, minDelay]);
+    if (!order) {
+      setProcessing(false);
+      return;
+    }
+    setProcessingDone(true);
     sessionStorage.removeItem("glowcamp_coupon");
     clear();
-    nav(`/thank-you/${order.order_number}`, { state: { order } });
+    // Tiny extra delay so user sees the checkmark
+    setTimeout(() => {
+      nav(`/thank-you/${order.order_number}`, { state: { order } });
+    }, 700);
   }
 
   async function startPaypal() {
@@ -355,12 +370,22 @@ export default function Checkout() {
     if (order) setCreatedOrder(order);
   }
   async function onPaypalApproved({ captureId, payerEmail }) {
+    setProcessing(true);
+    setProcessingDone(false);
+    const minDelay = new Promise((r) => setTimeout(r, 3500));
     try {
-      await api.post(`/orders/${createdOrder.id}/paypal-capture`, { capture_id: captureId, payer_email: payerEmail });
+      const capP = api.post(`/orders/${createdOrder.id}/paypal-capture`, { capture_id: captureId, payer_email: payerEmail });
+      await Promise.all([capP, minDelay]);
+      setProcessingDone(true);
       sessionStorage.removeItem("glowcamp_coupon");
       clear();
-      nav(`/thank-you/${createdOrder.order_number}`, { state: { order: { ...createdOrder, payment_status: "paid" } } });
-    } catch (e) { toast.error("Capture failed - please contact support"); }
+      setTimeout(() => {
+        nav(`/thank-you/${createdOrder.order_number}`, { state: { order: { ...createdOrder, payment_status: "paid" } } });
+      }, 700);
+    } catch (e) {
+      setProcessing(false);
+      toast.error("Capture failed - please contact support");
+    }
   }
 
   const pm = s?.payment_options || {};
@@ -379,6 +404,7 @@ export default function Checkout() {
 
   return (
     <div className="min-h-screen bg-[#0A0A0A] text-white">
+      {processing && <PaymentProcessing done={processingDone} />}
       <CheckoutHeader />
 
       {/* Mobile summary toggle */}

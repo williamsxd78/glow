@@ -59,7 +59,7 @@ export default function ThankYou() {
           <div className="bg-[#0E0E0E] border border-ink-500/60 rounded-2xl p-5 mb-6">
             <div className="flex items-start gap-3">
               <Package size={20} className="text-amber-500 mt-0.5" />
-              <div>
+              <div className="flex-1">
                 <h3 className="font-display text-lg">Order updates</h3>
                 <p className="text-sm text-neutral-400 mt-1">
                   You'll get shipping and delivery updates by email{order?.phone ? " and SMS" : ""}.
@@ -67,6 +67,25 @@ export default function ThankYou() {
               </div>
             </div>
           </div>
+
+          {/* Tracking link card (Shopify-style) */}
+          {order?.tracking_token && (
+            <Link
+              to={`/track-order?o=${order.order_number}&k=${order.tracking_token}`}
+              className="block bg-[#0E0E0E] border border-amber-500/40 hover:border-amber-500 rounded-2xl p-5 mb-6 transition-all group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-amber-500/15 text-amber-500 flex items-center justify-center shrink-0">
+                  <Truck size={18} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-display text-lg text-white">Track your order</h3>
+                  <p className="text-sm text-neutral-400 mt-0.5">Open the live tracking page for {order.order_number}</p>
+                </div>
+                <ChevronRight size={18} className="text-neutral-500 group-hover:text-amber-500 group-hover:translate-x-1 transition-all" />
+              </div>
+            </Link>
+          )}
 
           {/* Customer information */}
           {order && (

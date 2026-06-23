@@ -14,6 +14,10 @@ def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+def _track_token() -> str:
+    return uuid.uuid4().hex[:10].upper()
+
+
 # ---------- Auth ----------
 class AdminLogin(BaseModel):
     email: EmailStr
@@ -266,6 +270,7 @@ class Order(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=_id)
     order_number: str = Field(default_factory=lambda: "GC-" + str(uuid.uuid4())[:8].upper())
+    tracking_token: str = Field(default_factory=_track_token)
     full_name: str
     phone: str
     email: EmailStr

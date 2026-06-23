@@ -211,11 +211,20 @@ async def create_order(payload: OrderCreate):
 
 
 @api.get("/orders/track")
-async def track_order(order_number: str = Query(...), phone: str = Query(...)):
-    doc = await db.orders.find_one(
-        {"order_number": order_number.upper().strip(), "phone": phone.strip()},
-        {"_id": 0},
-    )
+async def track_order(
+    order_number: str = Query(...),
+    phone: Optional[str] = Query(None),
+    key: Optional[str] = Query(None),
+):
+    """Find an order by order_number + (phone OR tracking_token key)."""
+    q = {"order_number": order_number.upper().strip()}
+    if key:
+        q["tracking_token"] = key.strip().upper()
+    elif phone:
+        q["phone"] = phone.strip()
+    else:
+        raise HTTPException(status_code=400, detail="phone or key is required")
+    doc = await db.orders.find_one(q, {"_id": 0})
     if not doc:
         raise HTTPException(status_code=404, detail="Order not found")
     return doc
