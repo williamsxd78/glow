@@ -1,0 +1,150 @@
+{
+  "project_name": "GlowCamp 3D Printed Flame Lamp Ecommerce",
+  "theme": "Dark",
+  "archetype": "5 (Luxury)",
+  "design_rationale": "A cinematic, premium luxury home decor aesthetic that combines the sleek storytelling of an Apple product page with the warm, cozy emotion of a gift landing page. Dark theme enhances the amber 'fire glow' of the product.",
+  "typography": {
+    "primary_font": {
+      "family": "Marcellus, serif",
+      "usage": "Headings, Hero Text, Emphasized Titles",
+      "weights": ["400"]
+    },
+    "secondary_font": {
+      "family": "Outfit, sans-serif",
+      "usage": "Body text, UI elements, Buttons, Metadata",
+      "weights": ["300", "400", "500", "600"]
+    },
+    "hierarchy": {
+      "h1": "text-4xl sm:text-5xl lg:text-6xl tracking-tight leading-none font-normal",
+      "h2": "text-2xl sm:text-3xl lg:text-4xl tracking-tight leading-tight",
+      "h3": "text-xl sm:text-2xl",
+      "h4": "text-sm sm:text-base text-amber-500 tracking-[0.2em] uppercase",
+      "body": "text-base text-neutral-300 leading-relaxed",
+      "small": "text-sm text-neutral-400"
+    }
+  },
+  "colors": {
+    "background": {
+      "default": "#0A0A0A",
+      "surface": "#121212",
+      "elevated": "#1A1A1A"
+    },
+    "primary": {
+      "default": "#FFAA00",
+      "hover": "#FFC04D",
+      "glow": "rgba(255, 170, 0, 0.4)"
+    },
+    "accent": {
+      "amber": "#FF8C00",
+      "gold": "#FFD700",
+      "charcoal_brown": "#2C241B",
+      "dark_brown": "#1E1610"
+    },
+    "text": {
+      "primary": "#FFFFFF",
+      "secondary": "#D4D4D4",
+      "muted": "#8A8A8A"
+    },
+    "borders": {
+      "default": "#2C241B",
+      "light": "#4A3C31"
+    }
+  },
+  "layout_and_spacing": {
+    "container": "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8",
+    "section_padding": "py-20 md:py-32",
+    "element_spacing": "gap-8 md:gap-12",
+    "grid_system": "Bento-style grids for features and lifestyle images with wide gaps (gap-6 or gap-8).",
+    "radius": "rounded-2xl for major cards, rounded-full for buttons"
+  },
+  "components": {
+    "buttons": {
+      "primary": "bg-[#FFAA00] text-black font-semibold rounded-full px-8 py-4 hover:bg-[#FFC04D] shadow-[0_0_20px_rgba(255,170,0,0.3)] hover:shadow-[0_0_30px_rgba(255,170,0,0.5)] transition-all",
+      "secondary": "bg-transparent border border-[#2C241B] text-white rounded-full px-8 py-4 hover:border-[#FFAA00] hover:text-[#FFAA00] transition-all"
+    },
+    "cards": {
+      "default": "bg-[#121212] border border-[#2C241B] rounded-2xl p-8 relative overflow-hidden",
+      "glassmorphism": "backdrop-blur-xl bg-black/40 border border-white/10 rounded-2xl p-8 shadow-[0_8px_32px_rgba(0,0,0,0.5)]"
+    },
+    "inputs": {
+      "default": "bg-[#1A1A1A] border border-[#2C241B] rounded-lg px-4 py-3 text-white focus:border-[#FFAA00] focus:ring-1 focus:ring-[#FFAA00] outline-none transition-all"
+    }
+  },
+  "animations": {
+    "flicker_glow": "Animate box-shadow and opacity to mimic a soft campfire flicker. Use CSS keyframes for 0%, 50%, 100% with varying spread radius and opacity (rgba(255, 140, 0, 0.2) to rgba(255, 140, 0, 0.5)).",
+    "scroll_reveal": "Fade up and slide up (translate-y-8) on scroll using Framer Motion.",
+    "hover_effects": "Slight lift (-translate-y-1) and increased amber glow shadow for interactive elements."
+  },
+  "sections_guidelines": {
+    "hero": "Cinematic full-height (min-h-[90vh]). Pure black background. Large product image in center with intense amber glow behind it. Headline 'Bring the Campfire Glow Home' in Marcellus. Primary CTA. Down arrow indicator.",
+    "story": "Text-heavy editorial section. 'Scrollytelling' vibe. Use charcoal brown container with glowing borders. Focus on the emotion of cozy nights.",
+    "youtube_embed": "Vertical layout. Frame the video inside a stylized phone mockup with a glowing amber border to emphasize the mobile-first/Shorts origin.",
+    "how_its_made": "6-step vertical timeline on mobile, horizontal or alternating zigzag on desktop. Show 3D printing process to final glow.",
+    "features": "Bento grid with 8 cards. Icons should be in amber. Dark surface backgrounds.",
+    "lifestyle": "Masonry or grid of 8 images showing different use cases. Overlay text on hover. Ensure overlay opacity is max bg-black/50 to let images breathe.",
+    "gallery": "Horizontal scroll or swipeable carousel of high-res images.",
+    "specs": "Clean, high-contrast dark table with 1px border-[#2C241B]. Minimalist.",
+    "offers": "3 pricing tiers side-by-side. 'Couple Pack' should be highlighted with a 'Best Value' badge and a stronger glowing border.",
+    "sticky_atc": "Fixed bottom bar on mobile with price and 'Add to Cart' button. Appears after scrolling past the hero. On desktop, use a floating CTA.",
+    "reviews": "Masonry grid of customer reviews. 5-star icons in gold.",
+    "faq": "Accordion style. Border-bottom only, clean minimalist tech aesthetic.",
+    "checkout": "Frictionless form. Keep the dark luxury theme. Floating order summary on right (desktop).",
+    "admin": "Dashboard with deep dark theme. Cardless styling or subtle 1px borders. Charts using recharts with amber/gold lines."
+  },
+  "mobile_first": {
+    "strategy": "Optimize for one-handed use. Large tap targets (min 44px). Sticky bottom Add to Cart is crucial. Optimize font sizes to avoid horizontal scrolling.",
+    "youtube_shorts": "Prominently display the vertical video as it's the main traffic driver. Ensure it auto-plays if possible or has a highly visible custom play button."
+  },
+  "testing": {
+    "attributes": "ALL interactive and key informational elements MUST include `data-testid` attribute (e.g., `data-testid=\"hero-cta\"`, `data-testid=\"offer-couple-pack-btn\"`). Convention: kebab-case, role-based."
+  },
+  "media": {
+    "image_urls": [
+      {
+        "category": "product_hero",
+        "url": "https://customer-assets.emergentagent.com/job_flame-glow-demo/artifacts/wqi3n5yz_Screenshot_20260623_123638_YouTube.jpg",
+        "description": "GlowCamp 3D Printed Flame Lamp"
+      },
+      {
+        "category": "lifestyle_bedroom",
+        "url": "https://images.pexels.com/photos/26535233/pexels-photo-26535233.jpeg",
+        "description": "Cozy bedroom nightstand scene"
+      },
+      {
+        "category": "lifestyle_cafe",
+        "url": "https://images.unsplash.com/photo-1542372147193-a7aca54189cd?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA2ODl8MHwxfHNlYXJjaHwxfHxkYXJrJTIwbW9vZHklMjBjYWZlJTIwdGFibGV8ZW58MHx8fHwxNzgyMTk5MDcyfDA&ixlib=rb-4.1.0&q=85",
+        "description": "Dark moody cafe table"
+      },
+      {
+        "category": "lifestyle_gaming",
+        "url": "https://images.pexels.com/photos/6489045/pexels-photo-6489045.jpeg",
+        "description": "Sleek gaming desk in the dark"
+      },
+      {
+        "category": "lifestyle_reading",
+        "url": "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+        "description": "Cozy reading nook"
+      },
+      {
+        "category": "lifestyle_dinner",
+        "url": "https://images.unsplash.com/photo-1543083477-4f785aeafaa9?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+        "description": "Romantic dinner setting"
+      },
+      {
+        "category": "lifestyle_office",
+        "url": "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+        "description": "Dark office desk setup"
+      },
+      {
+        "category": "lifestyle_living_room",
+        "url": "https://images.unsplash.com/photo-1583847268964-b28dc8f51f92?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+        "description": "Living room shelf at night"
+      },
+      {
+        "category": "lifestyle_meditation",
+        "url": "https://images.unsplash.com/photo-1545389336-cf090694435e?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+        "description": "Meditation or yoga space"
+      }
+    ]
+  }
+}
