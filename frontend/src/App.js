@@ -33,12 +33,13 @@ import "@/App.css";
 function Shell() {
   const loc = useLocation();
   const isAdmin = loc.pathname.startsWith("/admin");
+  const isCheckout = loc.pathname.startsWith("/checkout");
   return (
     <>
-      {!isAdmin && <AnnouncementBar />}
-      <Navbar />
+      {!isAdmin && !isCheckout && <AnnouncementBar />}
+      {!isCheckout && <Navbar />}
       <Outlet />
-      <Footer />
+      {!isCheckout && <Footer />}
       <StickyCart />
       <WhatsAppButton />
     </>
