@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, ShoppingBag, Star, HelpCircle, Image as ImgIcon, Settings as SettingsIcon, Package, LogOut } from "lucide-react";
+import { LayoutDashboard, ShoppingBag, Star, HelpCircle, Image as ImgIcon, Settings as SettingsIcon, Package, LogOut, Tag } from "lucide-react";
 import { api } from "../../lib/api";
 import { FlameMark } from "../../components/FlameLogo";
 import { TID } from "../../constants/testIds";
@@ -9,6 +9,7 @@ const NAV = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, end: true },
   { to: "/admin/orders", label: "Orders", icon: ShoppingBag },
   { to: "/admin/product", label: "Product", icon: Package },
+  { to: "/admin/coupons", label: "Coupons", icon: Tag },
   { to: "/admin/reviews", label: "Reviews", icon: Star },
   { to: "/admin/faqs", label: "FAQs", icon: HelpCircle },
   { to: "/admin/gallery", label: "Gallery", icon: ImgIcon },

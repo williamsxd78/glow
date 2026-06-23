@@ -148,6 +148,35 @@ class SocialLinks(BaseModel):
     tiktok: str = ""
 
 
+class Coupon(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=_id)
+    code: str
+    type: Literal["percent", "fixed"] = "percent"
+    value: float = 10.0  # percent (0-100) or fixed amount
+    min_subtotal: float = 0.0
+    usage_limit: int = 0  # 0 = unlimited
+    usage_count: int = 0
+    active: bool = True
+    description: str = ""
+    created_at: str = Field(default_factory=_now)
+
+
+class CouponCreate(BaseModel):
+    code: str
+    type: Literal["percent", "fixed"] = "percent"
+    value: float = 10.0
+    min_subtotal: float = 0.0
+    usage_limit: int = 0
+    active: bool = True
+    description: str = ""
+
+
+class CouponValidateRequest(BaseModel):
+    code: str
+    subtotal: float
+
+
 class Settings(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = "global"
@@ -168,6 +197,8 @@ class Settings(BaseModel):
         "Hi, I want to know more about GlowCamp 3D Printed Flame Lamp."
     )
     social: SocialLinks = Field(default_factory=SocialLinks)
+    store_country: Literal["US", "IN", "CUSTOM"] = "US"
+    custom_states: List[str] = Field(default_factory=list)
     updated_at: str = Field(default_factory=_now)
 
 
@@ -186,6 +217,10 @@ class PublicSettings(BaseModel):
     payment_options: dict  # available payment methods
     shipping_charge: float
     free_shipping_threshold: float
+    store_country: str
+    custom_states: List[str]
+    paypal_client_id: str = ""
+    paypal_mode: str = "sandbox"
 
 
 # ---------- Orders ----------
@@ -224,6 +259,7 @@ class OrderCreate(BaseModel):
     items: List[OrderItem]
     payment_method: PaymentMethod
     notes: Optional[str] = ""
+    coupon_code: Optional[str] = ""
 
 
 class Order(BaseModel):
@@ -240,6 +276,8 @@ class Order(BaseModel):
     landmark: str = ""
     items: List[OrderItem]
     subtotal: float
+    discount: float = 0.0
+    coupon_code: str = ""
     shipping: float
     cod_advance: float = 0.0
     total: float

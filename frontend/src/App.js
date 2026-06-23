@@ -25,6 +25,7 @@ import Faqs from "@/pages/admin/Faqs";
 import Gallery from "@/pages/admin/Gallery";
 import Settings from "@/pages/admin/Settings";
 import ProductPage from "@/pages/admin/Product";
+import Coupons from "@/pages/admin/Coupons";
 
 import "@/App.css";
 
@@ -63,6 +64,7 @@ export default function App() {
             <Route index element={<Dashboard />} />
             <Route path="orders" element={<Orders />} />
             <Route path="product" element={<ProductPage />} />
+            <Route path="coupons" element={<Coupons />} />
             <Route path="reviews" element={<Reviews />} />
             <Route path="faqs" element={<Faqs />} />
             <Route path="gallery" element={<Gallery />} />

@@ -17,6 +17,9 @@ from auth import create_token, require_admin, verify_password
 from email_util import render, send_email
 from models import (
     AdminLogin,
+    Coupon,
+    CouponCreate,
+    CouponValidateRequest,
     FaqCreate,
     Faq,
     GalleryCreate,
@@ -89,6 +92,10 @@ def public_view(s: Settings) -> PublicSettings:
         },
         shipping_charge=s.payment.shipping_charge,
         free_shipping_threshold=s.payment.free_shipping_threshold,
+        store_country=s.store_country,
+        custom_states=s.custom_states,
+        paypal_client_id=s.payment.paypal_client_id,
+        paypal_mode=s.payment.paypal_mode,
     )
 
 
@@ -144,13 +151,31 @@ async def create_order(payload: OrderCreate):
             line_total=line,
         ))
     subtotal = round(subtotal, 2)
-    shipping = 0.0 if subtotal >= s.payment.free_shipping_threshold else s.payment.shipping_charge
+
+    # Coupon
+    discount = 0.0
+    applied_code = ""
+    if payload.coupon_code:
+        code = payload.coupon_code.strip().upper()
+        coupon = await db.coupons.find_one({"code": code, "active": True})
+        if coupon:
+            if subtotal >= coupon.get("min_subtotal", 0):
+                if coupon.get("usage_limit", 0) == 0 or coupon.get("usage_count", 0) < coupon["usage_limit"]:
+                    if coupon["type"] == "percent":
+                        discount = round(subtotal * (coupon["value"] / 100.0), 2)
+                    else:
+                        discount = round(min(coupon["value"], subtotal), 2)
+                    applied_code = code
+                    await db.coupons.update_one({"id": coupon["id"]}, {"$inc": {"usage_count": 1}})
+
+    discounted_subtotal = max(0.0, subtotal - discount)
+    shipping = 0.0 if discounted_subtotal >= s.payment.free_shipping_threshold else s.payment.shipping_charge
     cod_advance = (
         s.payment.cod_advance_amount
         if payload.payment_method == "cod" and s.payment.cod_advance_enabled
         else 0.0
     )
-    total = round(subtotal + shipping, 2)
+    total = round(discounted_subtotal + shipping, 2)
 
     order = Order(
         full_name=payload.full_name,
@@ -163,6 +188,8 @@ async def create_order(payload: OrderCreate):
         landmark=payload.landmark or "",
         items=validated,
         subtotal=subtotal,
+        discount=discount,
+        coupon_code=applied_code,
         shipping=shipping,
         cod_advance=cod_advance,
         total=total,
@@ -192,6 +219,59 @@ async def track_order(order_number: str = Query(...), phone: str = Query(...)):
     if not doc:
         raise HTTPException(status_code=404, detail="Order not found")
     return doc
+
+
+@api.post("/coupons/validate")
+async def validate_coupon(payload: CouponValidateRequest):
+    code = payload.code.strip().upper()
+    coupon = await db.coupons.find_one({"code": code, "active": True}, {"_id": 0})
+    if not coupon:
+        raise HTTPException(status_code=404, detail="Invalid coupon code")
+    if payload.subtotal < coupon.get("min_subtotal", 0):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Add ${coupon['min_subtotal'] - payload.subtotal:.2f} more to use this coupon",
+        )
+    if coupon.get("usage_limit", 0) and coupon.get("usage_count", 0) >= coupon["usage_limit"]:
+        raise HTTPException(status_code=400, detail="Coupon usage limit reached")
+    if coupon["type"] == "percent":
+        discount = round(payload.subtotal * (coupon["value"] / 100.0), 2)
+    else:
+        discount = round(min(coupon["value"], payload.subtotal), 2)
+    return {
+        "code": coupon["code"],
+        "type": coupon["type"],
+        "value": coupon["value"],
+        "discount": discount,
+        "description": coupon.get("description", ""),
+    }
+
+
+@api.post("/orders/{order_id}/paypal-capture")
+async def paypal_mark_paid(order_id: str, body: dict):
+    """Frontend reports a successful PayPal capture. We trust the client for now;
+    when merchant adds server-side keys later, webhooks can verify."""
+    capture_id = body.get("capture_id") or body.get("order_id") or ""
+    payer_email = body.get("payer_email", "")
+    res = await db.orders.update_one(
+        {"id": order_id},
+        {
+            "$set": {
+                "payment_status": "paid",
+                "paypal_capture_id": capture_id,
+                "paypal_payer_email": payer_email,
+            },
+            "$push": {
+                "timeline": OrderTimelineEvent(
+                    status="confirmed",
+                    note=f"PayPal payment captured ({capture_id[:12] if capture_id else 'n/a'})",
+                ).model_dump()
+            },
+        },
+    )
+    if res.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Order not found")
+    return {"ok": True}
 
 
 # ============================== Admin Auth ==============================
@@ -394,6 +474,40 @@ async def admin_update_gallery(gid: str, payload: dict, user=Depends(require_adm
 @api.delete("/admin/gallery/{gid}")
 async def admin_delete_gallery(gid: str, user=Depends(require_admin)):
     await db.gallery.delete_one({"id": gid})
+    return {"ok": True}
+
+
+# ============================== Admin Coupons ==============================
+@api.post("/admin/coupons", response_model=Coupon)
+async def admin_create_coupon(payload: CouponCreate, user=Depends(require_admin)):
+    code = payload.code.strip().upper()
+    existing = await db.coupons.find_one({"code": code})
+    if existing:
+        raise HTTPException(status_code=400, detail="Coupon code already exists")
+    c = Coupon(**{**payload.model_dump(), "code": code})
+    await db.coupons.insert_one(c.model_dump())
+    return c
+
+
+@api.get("/admin/coupons")
+async def admin_list_coupons(user=Depends(require_admin)):
+    return await db.coupons.find({}, {"_id": 0}).sort("created_at", -1).to_list(500)
+
+
+@api.put("/admin/coupons/{cid}", response_model=Coupon)
+async def admin_update_coupon(cid: str, payload: dict, user=Depends(require_admin)):
+    if "code" in payload:
+        payload["code"] = payload["code"].strip().upper()
+    await db.coupons.update_one({"id": cid}, {"$set": payload})
+    doc = await db.coupons.find_one({"id": cid}, {"_id": 0})
+    if not doc:
+        raise HTTPException(status_code=404, detail="not found")
+    return Coupon(**doc)
+
+
+@api.delete("/admin/coupons/{cid}")
+async def admin_delete_coupon(cid: str, user=Depends(require_admin)):
+    await db.coupons.delete_one({"id": cid})
     return {"ok": True}
 
 

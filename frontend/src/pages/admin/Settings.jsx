@@ -74,6 +74,22 @@ export default function Settings() {
         <button onClick={save} disabled={busy} className="btn-primary text-sm">{busy ? "Saving..." : "Save Changes"}</button>
       </div>
 
+      <Section title="Store Region">
+        <Field label="Store Country">
+          <select className={inputCls} value={s.store_country} onChange={(e) => up("store_country", e.target.value)}>
+            <option value="US">USA (US states, ZIP Code)</option>
+            <option value="IN">India (Indian states, Pincode)</option>
+            <option value="CUSTOM">Custom (add states below)</option>
+          </select>
+        </Field>
+        <Field label=" " />
+        {s.store_country === "CUSTOM" && (
+          <Field full label="Custom states (one per line)">
+            <textarea rows={4} className={inputCls} value={(s.custom_states || []).join("\n")} onChange={(e) => up("custom_states", e.target.value.split("\n").map((x) => x.trim()).filter(Boolean))} />
+          </Field>
+        )}
+      </Section>
+
       <Section title="Announcement Bar">
         <Field label="Enabled"><Toggle checked={s.announcement.enabled} onChange={(v) => up("announcement.enabled", v)} label="Show on top of site" /></Field>
         <Field label="Color">

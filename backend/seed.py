@@ -9,6 +9,7 @@ from models import (
     Faq,
     Review,
     GalleryItem,
+    Coupon,
 )
 
 ADMIN_EMAIL = "admin@glowcamp.com"
@@ -143,9 +144,23 @@ async def seed_gallery(db) -> None:
     await db.gallery.insert_many(docs)
 
 
+async def seed_coupons(db) -> None:
+    count = await db.coupons.count_documents({})
+    if count > 0:
+        return
+    docs = [
+        Coupon(code="GLOW10", type="percent", value=10.0, min_subtotal=25.0,
+               description="10% off your first GlowCamp", active=True).model_dump(),
+        Coupon(code="WELCOME5", type="fixed", value=5.0, min_subtotal=30.0,
+               description="$5 off orders over $30", active=True).model_dump(),
+    ]
+    await db.coupons.insert_many(docs)
+
+
 async def run_all_seeds(db) -> None:
     await seed_admin(db)
     await seed_settings(db)
     await seed_faqs(db)
     await seed_reviews(db)
     await seed_gallery(db)
+    await seed_coupons(db)
