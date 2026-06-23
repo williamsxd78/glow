@@ -259,6 +259,27 @@ export default function Checkout() {
       .catch(() => { setCoupon(null); sessionStorage.removeItem("glowcamp_coupon"); });
   }, [subtotal, coupon?.code]); // eslint-disable-line
 
+  // Cart recovery: debounce-save the session as soon as email + items are valid
+  useEffect(() => {
+    const email = f.email.trim().toLowerCase();
+    if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return;
+    if (!items.length) return;
+    const tid = setTimeout(() => {
+      api.post("/cart-sessions", {
+        email,
+        name: f.full_name || "",
+        subtotal,
+        items: items.map((it) => ({
+          offer_key: it.offer_key,
+          title: it.title,
+          quantity: it.quantity,
+          unit_price: it.unit_price,
+        })),
+      }).catch(() => {});
+    }, 800);
+    return () => clearTimeout(tid);
+  }, [f.email, f.full_name, items, subtotal]);
+
   if (items.length === 0 && !createdOrder && !processing) {
     return (
       <div className="min-h-screen bg-[#0A0A0A]">

@@ -170,8 +170,17 @@ export default function Settings() {
         <div className="sm:col-span-2"><button onClick={smtpTest} className="btn-ghost text-sm">Send Test Email</button></div>
       </Section>
 
+      <Section title="Cart Recovery">
+        <Field label="Enabled"><Toggle checked={s.cart_recovery?.enabled} onChange={(v) => up("cart_recovery.enabled", v)} label="Auto-send abandoned cart reminders" /></Field>
+        <Field label="Delay (minutes)"><input type="number" className={inputCls} value={s.cart_recovery?.delay_minutes || 35} onChange={(e) => up("cart_recovery.delay_minutes", parseInt(e.target.value) || 35)} /></Field>
+        <Field label="Max cart age (hours)"><input type="number" className={inputCls} value={s.cart_recovery?.max_age_hours || 24} onChange={(e) => up("cart_recovery.max_age_hours", parseInt(e.target.value) || 24)} /></Field>
+        <Field label=" ">
+          <p className="text-[11px] text-neutral-500">Requires SMTP enabled. We capture the visitor's email on checkout and email a friendly reminder if no order is placed within the delay window.</p>
+        </Field>
+      </Section>
+
       <Section title="Email Templates">
-        {["order_confirmation", "payment_confirmation", "order_shipped", "order_delivered", "order_cancelled"].map((k) => (
+        {["order_confirmation", "payment_confirmation", "order_shipped", "order_delivered", "order_cancelled", "cart_recovery"].map((k) => (
           <React.Fragment key={k}>
             <Field full label={`${k.replace(/_/g, " ").toUpperCase()} — Subject`}>
               <input className={inputCls} value={s.email_templates[k].subject} onChange={(e) => up(`email_templates.${k}.subject`, e.target.value)} />

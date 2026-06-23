@@ -1,10 +1,11 @@
 """GlowCamp ecommerce backend."""
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 from contextlib import asynccontextmanager
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import List, Optional
 
@@ -17,6 +18,8 @@ from auth import create_token, require_admin, verify_password
 from email_util import render, send_email
 from models import (
     AdminLogin,
+    CartSession,
+    CartSessionCreate,
     Coupon,
     CouponCreate,
     CouponValidateRequest,
@@ -53,7 +56,9 @@ async def lifespan(_app: FastAPI):
         logger.info("Seed data ensured")
     except Exception as e:
         logger.exception("Seed failed: %s", e)
+    task = asyncio.create_task(cart_recovery_loop())
     yield
+    task.cancel()
     mongo_client.close()
 
 
@@ -67,6 +72,68 @@ async def get_settings_doc() -> Settings:
     if not doc:
         raise HTTPException(status_code=500, detail="Settings not initialized")
     return Settings(**doc)
+
+
+def _isonow() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+async def cart_recovery_scan() -> int:
+    """One pass of the recovery scanner. Returns number of emails sent."""
+    s = await get_settings_doc()
+    cr = s.cart_recovery
+    if not cr.enabled or not s.smtp.enabled:
+        return 0
+    now = datetime.now(timezone.utc)
+    older_than = (now - timedelta(minutes=cr.delay_minutes)).isoformat()
+    younger_than = (now - timedelta(hours=cr.max_age_hours)).isoformat()
+    cursor = db.cart_sessions.find({
+        "reminder_sent": False,
+        "converted": False,
+        "updated_at": {"$lte": older_than, "$gte": younger_than},
+    })
+    sent = 0
+    base_url = (s.site_url or "").rstrip("/")
+    tpl = s.email_templates.cart_recovery
+    async for c in cursor:
+        try:
+            resume_url = (
+                f"{base_url}/cart?resume={c['id']}"
+                if base_url else f"/cart?resume={c['id']}"
+            )
+            ctx = {
+                "name": c.get("name") or c["email"].split("@")[0],
+                "email": c["email"],
+                "resume_url": resume_url,
+                "item_count": sum(i["quantity"] for i in c["items"]),
+                "subtotal": f"{c['subtotal']:.2f}",
+            }
+            ok = send_email(s.smtp.model_dump(), c["email"], render(tpl.subject, ctx), render(tpl.body, ctx))
+            await db.cart_sessions.update_one(
+                {"id": c["id"]},
+                {"$set": {"reminder_sent": True, "reminder_sent_at": _isonow()}},
+            )
+            if ok:
+                sent += 1
+        except Exception as e:
+            logger.exception("recovery send failed: %s", e)
+    return sent
+
+
+async def cart_recovery_loop():
+    """Periodic background task. Errors are logged but never crash the loop."""
+    await asyncio.sleep(15)
+    while True:
+        try:
+            sent = await cart_recovery_scan()
+            if sent:
+                logger.info("Cart recovery: sent %d reminder(s)", sent)
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            logger.exception("Cart recovery loop iteration failed")
+        await asyncio.sleep(60)
+
 
 
 def public_view(s: Settings) -> PublicSettings:
@@ -201,6 +268,25 @@ async def create_order(payload: OrderCreate):
     )
     await db.orders.insert_one(order.model_dump())
 
+    # Mark any open cart-recovery session for this email as converted
+    try:
+        await db.cart_sessions.update_many(
+            {"email": order.email.lower(), "converted": False},
+            {"$set": {"converted": True}},
+        )
+    except Exception as e:
+        logger.warning("cart session convert skipped: %s", e)
+
+
+    # Mark any open cart-recovery session for this email as converted
+    try:
+        await db.cart_sessions.update_many(
+            {"email": order.email.lower(), "converted": False},
+            {"$set": {"converted": True}},
+        )
+    except Exception as e:
+        logger.warning("cart session convert skipped: %s", e)
+
     # Try send confirmation email with rich context including tracking link
     try:
         tpl = s.email_templates.order_confirmation
@@ -226,6 +312,44 @@ async def create_order(payload: OrderCreate):
     except Exception as e:
         logger.warning("Email send skipped: %s", e)
     return order
+
+
+@api.post("/cart-sessions")
+async def upsert_cart_session(payload: CartSessionCreate):
+    """Save / update a cart-recovery session. Idempotent per email."""
+    existing = await db.cart_sessions.find_one({"email": payload.email.lower()})
+    now = _isonow()
+    if existing:
+        await db.cart_sessions.update_one(
+            {"id": existing["id"]},
+            {"$set": {
+                "name": payload.name or existing.get("name", ""),
+                "items": [i.model_dump() for i in payload.items],
+                "subtotal": payload.subtotal,
+                "updated_at": now,
+                "reminder_sent": False,
+                "reminder_sent_at": None,
+                "converted": False,
+            }},
+        )
+        return {"id": existing["id"]}
+    cs = CartSession(
+        email=payload.email.lower(),
+        name=payload.name or "",
+        items=payload.items,
+        subtotal=payload.subtotal,
+    )
+    await db.cart_sessions.insert_one(cs.model_dump())
+    return {"id": cs.id}
+
+
+@api.get("/cart-sessions/{cid}")
+async def get_cart_session(cid: str):
+    doc = await db.cart_sessions.find_one({"id": cid}, {"_id": 0, "email": 0})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Cart session not found")
+    return doc
+
 
 
 @api.get("/orders/track")

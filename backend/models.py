@@ -109,6 +109,19 @@ class EmailTemplates(BaseModel):
         subject="Your GlowCamp order was cancelled",
         body="<p>Hi {{name}},</p><p>Order <b>{{order_id}}</b> has been cancelled. Reply to this email if this was unexpected.</p>",
     )
+    cart_recovery: EmailTemplate = EmailTemplate(
+        subject="You left something glowing in your cart",
+        body=(
+            "<div style=\"font-family:Helvetica,Arial,sans-serif;max-width:560px;margin:0 auto;background:#0A0A0A;color:#fff;padding:32px;border-radius:16px;\">"
+            "<h2 style=\"font-family:Georgia,serif;color:#fff;font-weight:normal;margin:0 0 8px;\">Still thinking it over?</h2>"
+            "<p style=\"color:#bbb;margin:0 0 20px;\">Hi {{name}}, your GlowCamp lamp is waiting in your cart. "
+            "We held your items for you — they take just a minute to check out.</p>"
+            "<p style=\"color:#888;margin:0 0 24px;font-size:13px;\">{{item_count}} item(s) · ${{subtotal}}</p>"
+            "<a href=\"{{resume_url}}\" style=\"display:inline-block;background:#FFAA00;color:#0A0A0A;font-weight:600;text-decoration:none;padding:14px 22px;border-radius:999px;\">Return to your cart</a>"
+            "<p style=\"color:#666;font-size:11px;margin:24px 0 0;\">No pressure — your cart will stay saved for 24 hours.</p>"
+            "</div>"
+        ),
+    )
 
 
 class SEOSettings(BaseModel):
@@ -190,6 +203,40 @@ class CouponValidateRequest(BaseModel):
     subtotal: float
 
 
+class CartRecovery(BaseModel):
+    enabled: bool = True
+    delay_minutes: int = 35
+    max_age_hours: int = 24
+
+
+class CartSessionItem(BaseModel):
+    offer_key: str
+    title: str
+    quantity: int
+    unit_price: float
+
+
+class CartSessionCreate(BaseModel):
+    email: EmailStr
+    name: Optional[str] = ""
+    items: List[CartSessionItem]
+    subtotal: float
+
+
+class CartSession(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=_id)
+    email: EmailStr
+    name: str = ""
+    items: List[CartSessionItem]
+    subtotal: float = 0.0
+    reminder_sent: bool = False
+    reminder_sent_at: Optional[str] = None
+    converted: bool = False
+    created_at: str = Field(default_factory=_now)
+    updated_at: str = Field(default_factory=_now)
+
+
 class Settings(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = "global"
@@ -210,6 +257,7 @@ class Settings(BaseModel):
         "Hi, I want to know more about GlowCamp 3D Printed Flame Lamp."
     )
     social: SocialLinks = Field(default_factory=SocialLinks)
+    cart_recovery: CartRecovery = Field(default_factory=CartRecovery)
     site_url: str = ""  # public frontend URL, used in email links e.g. https://glowcamp.com
     store_country: Literal["US", "IN", "CUSTOM"] = "US"
     custom_states: List[str] = Field(default_factory=list)

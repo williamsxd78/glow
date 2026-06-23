@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Minus, Plus, Trash2, ArrowRight, ShoppingBag, Tag, ShieldCheck, Truck } from "lucide-react";
 import { toast } from "sonner";
 import { useCart } from "../lib/cart";
@@ -9,13 +9,39 @@ import { TID } from "../constants/testIds";
 import { FlameMark } from "../components/FlameLogo";
 
 export default function Cart() {
-  const { items, setQty, remove, subtotal } = useCart();
+  const { items, setQty, remove, subtotal, add } = useCart();
   const { data: s } = useSettings();
   const nav = useNavigate();
+  const [params, setParams] = useSearchParams();
 
   const [code, setCode] = useState("");
-  const [coupon, setCoupon] = useState(null); // {code, discount, ...}
+  const [coupon, setCoupon] = useState(null);
   const [busy, setBusy] = useState(false);
+
+  // Resume an abandoned cart from email link: /cart?resume={cart_session_id}
+  useEffect(() => {
+    const resumeId = params.get("resume");
+    if (!resumeId) return;
+    if (items.length > 0) {
+      // already have a cart - clear the param and keep what they had
+      const p = new URLSearchParams(params);
+      p.delete("resume");
+      setParams(p, { replace: true });
+      return;
+    }
+    api.get(`/cart-sessions/${resumeId}`)
+      .then(({ data }) => {
+        (data.items || []).forEach((it) => add({ key: it.offer_key, title: it.title, price: it.unit_price }, it.quantity));
+        toast.success("Welcome back! Your cart was restored.");
+      })
+      .catch(() => toast.error("This cart recovery link has expired."))
+      .finally(() => {
+        const p = new URLSearchParams(params);
+        p.delete("resume");
+        setParams(p, { replace: true });
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const freeShipThreshold = s?.free_shipping_threshold || 50;
   const shippingCharge = s?.shipping_charge || 5;
