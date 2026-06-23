@@ -4,7 +4,7 @@ import { Minus, Plus, Trash2, ArrowRight, ShoppingBag, Tag, ShieldCheck, Truck }
 import { toast } from "sonner";
 import { useCart } from "../lib/cart";
 import { useSettings } from "../lib/hooks";
-import { api } from "../lib/api";
+import { api, apiErrorMessage } from "../lib/api";
 import { TID } from "../constants/testIds";
 import { FlameMark } from "../components/FlameLogo";
 
@@ -37,7 +37,7 @@ export default function Cart() {
       sessionStorage.setItem("glowcamp_coupon", JSON.stringify(data));
       toast.success(`Coupon ${data.code} applied`);
     } catch (err) {
-      toast.error(err?.response?.data?.detail || "Invalid coupon");
+      toast.error(apiErrorMessage(err, "Invalid coupon"));
       setCoupon(null);
       sessionStorage.removeItem("glowcamp_coupon");
     } finally {

@@ -6,7 +6,7 @@ import {
 } from "lucide-react";
 import { useCart } from "../lib/cart";
 import { useSettings } from "../lib/hooks";
-import { api } from "../lib/api";
+import { api, apiErrorMessage } from "../lib/api";
 import { TID } from "../constants/testIds";
 import { statesFor, pincodeLabel } from "../lib/regions";
 import PayPalButton from "../components/PayPalButton";
@@ -308,7 +308,7 @@ export default function Checkout() {
       setCouponCode("");
       toast.success(`Coupon ${data.code} applied`);
     } catch (err2) {
-      toast.error(err2?.response?.data?.detail || "Invalid coupon");
+      toast.error(apiErrorMessage(err2, "Invalid coupon"));
     } finally { setCouponBusy(false); }
   }
   function removeCoupon() {
@@ -335,7 +335,7 @@ export default function Checkout() {
       const { data } = await api.post("/orders", payload);
       return data;
     } catch (err2) {
-      toast.error(err2?.response?.data?.detail || "Failed to place order");
+      toast.error(apiErrorMessage(err2, "Failed to place order"));
       return null;
     } finally { setBusy(false); }
   }

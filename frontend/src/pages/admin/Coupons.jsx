@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { api } from "../../lib/api";
+import { api, apiErrorMessage } from "../../lib/api";
 import { toast } from "sonner";
 import { Trash2, ToggleLeft, ToggleRight } from "lucide-react";
 
@@ -22,7 +22,7 @@ export default function Coupons() {
       setForm(empty);
       load();
     } catch (err) {
-      toast.error(err?.response?.data?.detail || "Failed to create coupon");
+      toast.error(apiErrorMessage(err, "Failed to create coupon"));
     }
   }
   async function toggleActive(c) {

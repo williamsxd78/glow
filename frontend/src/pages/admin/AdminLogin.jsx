@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Lock } from "lucide-react";
-import { api } from "../../lib/api";
+import { api, apiErrorMessage } from "../../lib/api";
 import { toast } from "sonner";
 import { TID } from "../../constants/testIds";
 import { FlameMark } from "../../components/FlameLogo";
@@ -22,7 +22,7 @@ export default function AdminLogin() {
       toast.success("Welcome back");
       nav("/admin");
     } catch (err) {
-      toast.error(err?.response?.data?.detail || "Invalid credentials");
+      toast.error(apiErrorMessage(err, "Invalid credentials"));
     } finally {
       setBusy(false);
     }

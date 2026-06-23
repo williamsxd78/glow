@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Package, Check } from "lucide-react";
-import { api } from "../lib/api";
+import { api, apiErrorMessage } from "../lib/api";
 import { TID } from "../constants/testIds";
 import { toast } from "sonner";
 
@@ -32,7 +32,7 @@ export default function TrackOrder() {
       const { data } = await api.get("/orders/track", { params: { order_number: orderNumber, phone } });
       setOrder(data);
     } catch (err) {
-      toast.error(err?.response?.data?.detail || "Order not found");
+      toast.error(apiErrorMessage(err, "Order not found"));
     } finally {
       setBusy(false);
     }
