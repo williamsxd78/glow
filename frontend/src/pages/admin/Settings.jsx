@@ -1,0 +1,172 @@
+import React, { useEffect, useState } from "react";
+import { api } from "../../lib/api";
+import { toast } from "sonner";
+
+function Section({ title, children }) {
+  return (
+    <section className="bg-[#0E0E0E] border border-ink-500/60 rounded-2xl p-5 sm:p-6 mb-6">
+      <h2 className="font-display text-lg mb-4">{title}</h2>
+      <div className="grid sm:grid-cols-2 gap-3">{children}</div>
+    </section>
+  );
+}
+const inputCls = "bg-[#1A1A1A] border border-ink-500/70 rounded-lg px-3 py-2 text-sm w-full focus:border-amber-500 focus:outline-none";
+const labelCls = "text-xs text-neutral-500 uppercase tracking-wider mb-1.5 block";
+
+function Field({ label, children, full }) {
+  return (
+    <div className={full ? "sm:col-span-2" : ""}>
+      <label className={labelCls}>{label}</label>
+      {children}
+    </div>
+  );
+}
+
+function Toggle({ checked, onChange, label }) {
+  return (
+    <label className="inline-flex items-center gap-2 cursor-pointer">
+      <input type="checkbox" checked={!!checked} onChange={(e) => onChange(e.target.checked)} className="accent-amber-500" />
+      <span className="text-sm">{label}</span>
+    </label>
+  );
+}
+
+export default function Settings() {
+  const [s, setS] = useState(null);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => { api.get("/admin/settings").then((r) => setS(r.data)); }, []);
+
+  function up(path, value) {
+    setS((cur) => {
+      const copy = JSON.parse(JSON.stringify(cur));
+      const parts = path.split(".");
+      let o = copy;
+      for (let i = 0; i < parts.length - 1; i++) o = o[parts[i]];
+      o[parts[parts.length - 1]] = value;
+      return copy;
+    });
+  }
+
+  async function save() {
+    setBusy(true);
+    try {
+      await api.put("/admin/settings", s);
+      toast.success("Settings saved");
+    } catch (e) {
+      toast.error("Failed to save");
+    } finally { setBusy(false); }
+  }
+
+  async function smtpTest() {
+    const to = prompt("Send test email to:", s.smtp.from_email || "");
+    if (!to) return;
+    const { data } = await api.post("/admin/smtp/test", { to });
+    toast[data.sent ? "success" : "error"](data.sent ? "Test email sent" : "Email could not be sent (check SMTP config)");
+  }
+
+  if (!s) return <div className="text-neutral-500">Loading...</div>;
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+        <h1 className="font-display text-2xl sm:text-3xl">Settings</h1>
+        <button onClick={save} disabled={busy} className="btn-primary text-sm">{busy ? "Saving..." : "Save Changes"}</button>
+      </div>
+
+      <Section title="Announcement Bar">
+        <Field label="Enabled"><Toggle checked={s.announcement.enabled} onChange={(v) => up("announcement.enabled", v)} label="Show on top of site" /></Field>
+        <Field label="Color">
+          <input className={inputCls} value={s.announcement.color} onChange={(e) => up("announcement.color", e.target.value)} />
+        </Field>
+        <Field full label="Text">
+          <input className={inputCls} value={s.announcement.text} onChange={(e) => up("announcement.text", e.target.value)} />
+        </Field>
+      </Section>
+
+      <Section title="Countdown Timer">
+        <Field label="Enabled"><Toggle checked={s.countdown.enabled} onChange={(v) => up("countdown.enabled", v)} label="Show countdown" /></Field>
+        <Field label="Label"><input className={inputCls} value={s.countdown.label} onChange={(e) => up("countdown.label", e.target.value)} /></Field>
+        <Field full label="Ends At (ISO date, e.g. 2026-12-31T23:59:00Z)">
+          <input className={inputCls} value={s.countdown.ends_at} onChange={(e) => up("countdown.ends_at", e.target.value)} />
+        </Field>
+      </Section>
+
+      <Section title="YouTube Video">
+        <Field full label="Video URL (embed format)"><input className={inputCls} value={s.video_url} onChange={(e) => up("video_url", e.target.value)} /></Field>
+        <Field full label="Caption"><input className={inputCls} value={s.video_caption} onChange={(e) => up("video_caption", e.target.value)} /></Field>
+      </Section>
+
+      <Section title="WhatsApp Support">
+        <Field label="Number (with country code)"><input className={inputCls} value={s.whatsapp_number} onChange={(e) => up("whatsapp_number", e.target.value)} /></Field>
+        <Field label="Prefilled Message"><input className={inputCls} value={s.whatsapp_message} onChange={(e) => up("whatsapp_message", e.target.value)} /></Field>
+      </Section>
+
+      <Section title="Social Links">
+        <Field label="Instagram"><input className={inputCls} value={s.social.instagram} onChange={(e) => up("social.instagram", e.target.value)} /></Field>
+        <Field label="YouTube"><input className={inputCls} value={s.social.youtube} onChange={(e) => up("social.youtube", e.target.value)} /></Field>
+        <Field label="Facebook"><input className={inputCls} value={s.social.facebook} onChange={(e) => up("social.facebook", e.target.value)} /></Field>
+        <Field label="TikTok"><input className={inputCls} value={s.social.tiktok} onChange={(e) => up("social.tiktok", e.target.value)} /></Field>
+      </Section>
+
+      <Section title="SEO">
+        <Field full label="Meta Title"><input className={inputCls} value={s.seo.title} onChange={(e) => up("seo.title", e.target.value)} /></Field>
+        <Field full label="Meta Description"><textarea rows={3} className={inputCls} value={s.seo.description} onChange={(e) => up("seo.description", e.target.value)} /></Field>
+        <Field label="Open Graph Image URL"><input className={inputCls} value={s.seo.og_image} onChange={(e) => up("seo.og_image", e.target.value)} /></Field>
+        <Field label="Pixel / GA ID"><input className={inputCls} value={s.seo.pixel_id} onChange={(e) => up("seo.pixel_id", e.target.value)} /></Field>
+      </Section>
+
+      <Section title="Payment Gateways">
+        <Field label="PayPal"><Toggle checked={s.payment.paypal_enabled} onChange={(v) => up("payment.paypal_enabled", v)} label="Enable PayPal" /></Field>
+        <Field label="PayPal Mode">
+          <select className={inputCls} value={s.payment.paypal_mode} onChange={(e) => up("payment.paypal_mode", e.target.value)}>
+            <option value="sandbox">Sandbox</option>
+            <option value="live">Live</option>
+          </select>
+        </Field>
+        <Field label="PayPal Client ID"><input className={inputCls} value={s.payment.paypal_client_id} onChange={(e) => up("payment.paypal_client_id", e.target.value)} /></Field>
+        <Field label="PayPal Secret"><input type="password" className={inputCls} value={s.payment.paypal_secret} onChange={(e) => up("payment.paypal_secret", e.target.value)} /></Field>
+        <Field label="Stripe"><Toggle checked={s.payment.stripe_enabled} onChange={(v) => up("payment.stripe_enabled", v)} label="Enable Stripe" /></Field>
+        <Field label="Stripe Key"><input type="password" className={inputCls} value={s.payment.stripe_key} onChange={(e) => up("payment.stripe_key", e.target.value)} /></Field>
+        <Field label="Razorpay"><Toggle checked={s.payment.razorpay_enabled} onChange={(v) => up("payment.razorpay_enabled", v)} label="Enable Razorpay" /></Field>
+        <Field label="Razorpay Key ID"><input className={inputCls} value={s.payment.razorpay_key_id} onChange={(e) => up("payment.razorpay_key_id", e.target.value)} /></Field>
+        <Field label="Manual UPI"><Toggle checked={s.payment.manual_upi_enabled} onChange={(v) => up("payment.manual_upi_enabled", v)} label="Enable Manual UPI" /></Field>
+        <Field label="UPI ID"><input className={inputCls} value={s.payment.manual_upi_id} onChange={(e) => up("payment.manual_upi_id", e.target.value)} /></Field>
+        <Field label="Cash on Delivery"><Toggle checked={s.payment.cod_enabled} onChange={(v) => up("payment.cod_enabled", v)} label="Enable COD" /></Field>
+        <Field label="COD Advance"><Toggle checked={s.payment.cod_advance_enabled} onChange={(v) => up("payment.cod_advance_enabled", v)} label="Require advance payment" /></Field>
+        <Field label="COD Advance Amount ($)"><input type="number" className={inputCls} value={s.payment.cod_advance_amount} onChange={(e) => up("payment.cod_advance_amount", parseFloat(e.target.value) || 0)} /></Field>
+        <Field label="Shipping Charge ($)"><input type="number" className={inputCls} value={s.payment.shipping_charge} onChange={(e) => up("payment.shipping_charge", parseFloat(e.target.value) || 0)} /></Field>
+        <Field label="Free Shipping Threshold ($)"><input type="number" className={inputCls} value={s.payment.free_shipping_threshold} onChange={(e) => up("payment.free_shipping_threshold", parseFloat(e.target.value) || 0)} /></Field>
+      </Section>
+
+      <Section title="SMTP Email Settings">
+        <Field label="Enabled"><Toggle checked={s.smtp.enabled} onChange={(v) => up("smtp.enabled", v)} label="Send transactional emails" /></Field>
+        <Field label="Use TLS"><Toggle checked={s.smtp.use_tls} onChange={(v) => up("smtp.use_tls", v)} label="STARTTLS" /></Field>
+        <Field label="SMTP Host"><input className={inputCls} value={s.smtp.host} onChange={(e) => up("smtp.host", e.target.value)} /></Field>
+        <Field label="SMTP Port"><input type="number" className={inputCls} value={s.smtp.port} onChange={(e) => up("smtp.port", parseInt(e.target.value) || 0)} /></Field>
+        <Field label="Username"><input className={inputCls} value={s.smtp.username} onChange={(e) => up("smtp.username", e.target.value)} /></Field>
+        <Field label="Password"><input type="password" className={inputCls} value={s.smtp.password} onChange={(e) => up("smtp.password", e.target.value)} /></Field>
+        <Field label="From Email"><input className={inputCls} value={s.smtp.from_email} onChange={(e) => up("smtp.from_email", e.target.value)} /></Field>
+        <Field label="From Name"><input className={inputCls} value={s.smtp.from_name} onChange={(e) => up("smtp.from_name", e.target.value)} /></Field>
+        <div className="sm:col-span-2"><button onClick={smtpTest} className="btn-ghost text-sm">Send Test Email</button></div>
+      </Section>
+
+      <Section title="Email Templates">
+        {["order_confirmation", "payment_confirmation", "order_shipped", "order_delivered", "order_cancelled"].map((k) => (
+          <React.Fragment key={k}>
+            <Field full label={`${k.replace(/_/g, " ").toUpperCase()} — Subject`}>
+              <input className={inputCls} value={s.email_templates[k].subject} onChange={(e) => up(`email_templates.${k}.subject`, e.target.value)} />
+            </Field>
+            <Field full label={`${k.replace(/_/g, " ").toUpperCase()} — Body (HTML, supports {{name}}, {{order_id}})`}>
+              <textarea rows={3} className={inputCls} value={s.email_templates[k].body} onChange={(e) => up(`email_templates.${k}.body`, e.target.value)} />
+            </Field>
+          </React.Fragment>
+        ))}
+      </Section>
+
+      <div className="flex justify-end">
+        <button onClick={save} disabled={busy} className="btn-primary">{busy ? "Saving..." : "Save All Changes"}</button>
+      </div>
+    </div>
+  );
+}
