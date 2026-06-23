@@ -33,13 +33,15 @@ import "@/App.css";
 function Shell() {
   const loc = useLocation();
   const isAdmin = loc.pathname.startsWith("/admin");
-  const isCheckout = loc.pathname.startsWith("/checkout");
+  const minimal = loc.pathname.startsWith("/checkout")
+    || loc.pathname.startsWith("/thank-you")
+    || loc.pathname.startsWith("/track-order");
   return (
     <>
-      {!isAdmin && !isCheckout && <AnnouncementBar />}
-      {!isCheckout && <Navbar />}
+      {!isAdmin && !minimal && <AnnouncementBar />}
+      {!minimal && <Navbar />}
       <Outlet />
-      {!isCheckout && <Footer />}
+      {!minimal && <Footer />}
       <StickyCart />
       <WhatsAppButton />
     </>

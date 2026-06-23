@@ -228,7 +228,7 @@ OrderStatus = Literal[
     "placed", "confirmed", "packed", "shipped", "out_for_delivery", "delivered", "cancelled"
 ]
 
-PaymentMethod = Literal["paypal", "stripe", "razorpay", "manual_upi", "cod"]
+PaymentMethod = Literal["paypal", "stripe", "card", "razorpay", "manual_upi", "cod"]
 
 PaymentStatus = Literal["pending", "paid", "partial", "failed", "refunded"]
 

@@ -10,7 +10,7 @@ import { api, apiErrorMessage } from "../lib/api";
 import { TID } from "../constants/testIds";
 import { statesFor, pincodeLabel } from "../lib/regions";
 import PayPalButton from "../components/PayPalButton";
-import { FlameMark } from "../components/FlameLogo";
+import CheckoutHeader from "../components/CheckoutHeader";
 
 /* ============================== Floating Label Input ============================== */
 function FloatInput({ id, label, error, hint, ...rest }) {
@@ -630,19 +630,4 @@ export default function Checkout() {
   );
 }
 
-/* ============================== Header ============================== */
-function CheckoutHeader() {
-  return (
-    <header className="border-b border-ink-500/40 bg-[#0A0A0A]">
-      <div className="max-w-[1180px] mx-auto px-4 sm:px-6 lg:px-10 h-16 flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-2.5">
-          <FlameMark size={22} />
-          <span className="font-display text-lg tracking-wide">GlowCamp</span>
-        </Link>
-        <Link to="/cart" className="text-xs text-neutral-400 hover:text-amber-500 flex items-center gap-1.5">
-          <Lock size={12} /> Secure checkout
-        </Link>
-      </div>
-    </header>
-  );
-}
+/* ============================== Header now imported ============================== */
