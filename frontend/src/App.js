@@ -8,6 +8,7 @@ import Footer from "@/components/Footer";
 import AnnouncementBar from "@/components/AnnouncementBar";
 import StickyCart from "@/components/StickyCart";
 import WhatsAppButton from "@/components/WhatsAppButton";
+import ScrollToTop from "@/components/ScrollToTop";
 
 import Home from "@/pages/Home";
 import Cart from "@/pages/Cart";
@@ -48,6 +49,7 @@ export default function App() {
   return (
     <CartProvider>
       <BrowserRouter>
+        <ScrollToTop />
         <Toaster position="top-right" theme="dark" richColors />
         <Routes>
           <Route element={<Shell />}>
