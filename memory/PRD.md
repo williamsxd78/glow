@@ -32,14 +32,25 @@ Premium one-product ecommerce site for "GlowCamp 3D Printed Flame Lamp" - a 3D p
 - ✅ Typography fix: serif (Marcellus) only for headings, sans (Outfit) for forms/cart items
 - ✅ 41/41 backend tests pass
 
+## Iteration 3 (Feb 2026)
+- ✅ Dynamic Card Payment Form Builder — admin can add fields one-by-one via Admin → Settings. Each field has key, label, type (text/email/tel/number/password), required, full-width, **and a `capture` toggle** (defaults true). When `capture=false`, the field renders on checkout but the value is **not** saved with the order — useful for decorative fields like card_number/cvv.
+- ✅ Hardcoded card_number / card_name / card_exp / card_cvv inputs REMOVED from `Checkout.jsx`. Card section is 100% admin-driven. Empty state shows friendly banner: "No fields configured. Add fields from Admin → Settings → Card Payment Form Fields."
+- ✅ **Image Upload via Emergent Object Storage**: `POST /api/admin/uploads` (admin-only, 8 MB max, JPG/PNG/WEBP/GIF) returns `{url, path, size}`. `GET /api/files/{path:path}` serves the bytes with the right Content-Type. `db.files` collection tracks each upload.
+- ✅ New reusable React `<ImageUpload />` component with preview thumbnail, URL input (backward compat for external links), and Upload button. Wired into Admin → Gallery and Admin → Product (Main Image).
+- ✅ `resolveImageUrl()` helper added to `lib/api.js` and applied across Hero, Cart, Checkout, ThankYou, TrackOrder, Product, Gallery and StickyCart — uploaded relative paths (`/api/files/...`) now resolve to absolute backend URLs at render time; existing absolute URLs continue to work.
+- ✅ 49/49 backend tests pass (8 new for capture filter + uploads + file serving).
+
 ## Test Credentials
 - Admin: `admin@glowcamp.com` / `GlowCamp@2026`
 - Sample coupons: `GLOW10` (10% off, min $25), `WELCOME5` ($5 off, min $30)
 
 ## P1 Backlog
-- Image upload to object storage (gallery & product main image) - simpler than pasting URLs
 - Coupon code validator clamp (percent 0-100), CouponUpdate Pydantic model
 - Decrement coupon usage_count when order cancelled
 - Server-side PayPal capture verification with merchant credentials
 - Real Stripe card capture (test keys already in env)
-- Split server.py into routers/ when adding next feature group
+- Refactor: split `server.py` (now 760+ lines) into `routers/admin_*.py` + `routers/files.py`
+- Wrap `obj_storage.put_object`/`get_object` in `asyncio.to_thread()` to avoid blocking the event loop
+- Server-side validator on `Settings.card_extra_fields[*].key` (dedupe + non-empty)
+- Move `Order.custom_fields` from dict to `List[CustomFieldValue]` with label so admin CSV exports include human-readable column headers
+
