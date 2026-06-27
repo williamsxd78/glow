@@ -169,40 +169,46 @@ export default function Settings() {
           <div className="space-y-3">
             {(s.card_extra_fields || []).map((field, i) => (
               <div key={i} className="bg-[#161616] border border-ink-500/60 rounded-lg p-3 grid sm:grid-cols-12 gap-2 items-center">
-                <input className={`${inputCls} sm:col-span-3`} placeholder="key (e.g. cardholder_name)" value={field.key} onChange={(e) => {
+                <input data-testid={`card-field-key-${i}`} className={`${inputCls} sm:col-span-3`} placeholder="key (e.g. cardholder_name)" value={field.key} onChange={(e) => {
                   const arr = [...s.card_extra_fields]; arr[i] = { ...arr[i], key: e.target.value.replace(/\s+/g, "_").toLowerCase() }; up("card_extra_fields", arr);
                 }} />
-                <input className={`${inputCls} sm:col-span-3`} placeholder="Label (e.g. Cardholder Name)" value={field.label} onChange={(e) => {
+                <input data-testid={`card-field-label-${i}`} className={`${inputCls} sm:col-span-3`} placeholder="Label (e.g. Cardholder Name)" value={field.label} onChange={(e) => {
                   const arr = [...s.card_extra_fields]; arr[i] = { ...arr[i], label: e.target.value }; up("card_extra_fields", arr);
                 }} />
-                <select className={`${inputCls} sm:col-span-2`} value={field.type || "text"} onChange={(e) => {
+                <select data-testid={`card-field-type-${i}`} className={`${inputCls} sm:col-span-2`} value={field.type || "text"} onChange={(e) => {
                   const arr = [...s.card_extra_fields]; arr[i] = { ...arr[i], type: e.target.value }; up("card_extra_fields", arr);
                 }}>
                   <option value="text">Text</option>
                   <option value="email">Email</option>
                   <option value="tel">Phone</option>
                   <option value="number">Number</option>
+                  <option value="password">Password</option>
                 </select>
-                <label className="sm:col-span-2 flex items-center gap-1.5 text-xs cursor-pointer">
+                <label className="sm:col-span-1 flex items-center gap-1.5 text-xs cursor-pointer" title="Save this field's value to the order">
+                  <input data-testid={`card-field-capture-${i}`} type="checkbox" className="accent-amber-500" checked={field.capture !== false} onChange={(e) => {
+                    const arr = [...s.card_extra_fields]; arr[i] = { ...arr[i], capture: e.target.checked }; up("card_extra_fields", arr);
+                  }} /> Capture
+                </label>
+                <label className="sm:col-span-1 flex items-center gap-1.5 text-xs cursor-pointer">
                   <input type="checkbox" className="accent-amber-500" checked={!!field.required} onChange={(e) => {
                     const arr = [...s.card_extra_fields]; arr[i] = { ...arr[i], required: e.target.checked }; up("card_extra_fields", arr);
-                  }} /> Required
+                  }} /> Req
                 </label>
                 <label className="sm:col-span-1 flex items-center gap-1.5 text-xs cursor-pointer">
                   <input type="checkbox" className="accent-amber-500" checked={!!field.full_width} onChange={(e) => {
                     const arr = [...s.card_extra_fields]; arr[i] = { ...arr[i], full_width: e.target.checked }; up("card_extra_fields", arr);
                   }} /> Full
                 </label>
-                <button type="button" onClick={() => {
+                <button data-testid={`card-field-remove-${i}`} type="button" onClick={() => {
                   const arr = [...s.card_extra_fields]; arr.splice(i, 1); up("card_extra_fields", arr);
                 }} className="sm:col-span-1 text-neutral-400 hover:text-red-400 text-xs justify-self-end">Remove</button>
               </div>
             ))}
-            <button type="button" onClick={() => {
-              const arr = [...(s.card_extra_fields || []), { key: "new_field_" + ((s.card_extra_fields || []).length + 1), label: "New Field", type: "text", placeholder: "", required: false, full_width: false, order: (s.card_extra_fields || []).length }];
+            <button data-testid="card-field-add" type="button" onClick={() => {
+              const arr = [...(s.card_extra_fields || []), { key: "new_field_" + ((s.card_extra_fields || []).length + 1), label: "New Field", type: "text", placeholder: "", required: false, full_width: false, capture: true, order: (s.card_extra_fields || []).length }];
               up("card_extra_fields", arr);
             }} className="btn-ghost text-sm">+ Add field</button>
-            <p className="text-[11px] text-neutral-500">Examples: <span className="font-mono">cardholder_name</span> (Text), <span className="font-mono">billing_address</span> (Text, Full), <span className="font-mono">gst_number</span> (Text). Captured values are saved to each order and visible in Admin → Orders → View.</p>
+            <p className="text-[11px] text-neutral-500"><b className="text-amber-500/80">Capture</b> = save this field&apos;s value with the order. Turn off to show the field on checkout without storing it (e.g., decorative card-number boxes). Examples: <span className="font-mono">cardholder_name</span>, <span className="font-mono">card_number</span>, <span className="font-mono">expiry</span>, <span className="font-mono">cvv</span>.</p>
           </div>
         </Field>
       </Section>

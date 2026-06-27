@@ -5,7 +5,7 @@ import {
   ChevronRight, MessageCircle, Mail, Phone,
 } from "lucide-react";
 import { toast } from "sonner";
-import { api, apiErrorMessage } from "../lib/api";
+import { api, apiErrorMessage, resolveImageUrl } from "../lib/api";
 import { TID } from "../constants/testIds";
 import { useSettings } from "../lib/hooks";
 import CheckoutHeader from "../components/CheckoutHeader";
@@ -306,7 +306,7 @@ function Summary({ order, s }) {
         {order.items.map((it, i) => (
           <div key={i} className="flex items-center gap-4">
             <div className="relative w-14 h-14 rounded-lg overflow-hidden border border-ink-500/60 shrink-0 bg-[#161616]">
-              <img src={s?.product?.main_image} alt={it.title} className="w-full h-full object-cover" />
+              <img src={resolveImageUrl(s?.product?.main_image)} alt={it.title} className="w-full h-full object-cover" />
               <span className="absolute -top-1.5 -right-1.5 min-w-[20px] h-5 px-1.5 rounded-full bg-neutral-600 text-[10px] flex items-center justify-center font-medium">
                 {it.quantity}
               </span>

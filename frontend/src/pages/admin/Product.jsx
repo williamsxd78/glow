@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { api } from "../../lib/api";
 import { toast } from "sonner";
+import ImageUpload from "../../components/ImageUpload";
 
 const inputCls = "bg-[#1A1A1A] border border-ink-500/70 rounded-lg px-3 py-2 text-sm w-full focus:border-amber-500 focus:outline-none";
 const labelCls = "text-xs text-neutral-500 uppercase tracking-wider mb-1.5 block";
@@ -63,8 +64,13 @@ export default function ProductPage() {
             <textarea rows={3} className={inputCls} value={p.description} onChange={(e) => set("product.description", e.target.value)} />
           </div>
           <div className="sm:col-span-2">
-            <label className={labelCls}>Main Image URL</label>
-            <input className={inputCls} value={p.main_image} onChange={(e) => set("product.main_image", e.target.value)} />
+            <label className={labelCls}>Main Image</label>
+            <ImageUpload
+              value={p.main_image}
+              onChange={(url) => set("product.main_image", url)}
+              label="Main Image"
+              testIdPrefix="product-main"
+            />
           </div>
           <div><label className={labelCls}>Original Price ($)</label><input type="number" step="0.01" className={inputCls} value={p.original_price} onChange={(e) => set("product.original_price", parseFloat(e.target.value) || 0)} /></div>
           <div><label className={labelCls}>Sale Price ($)</label><input type="number" step="0.01" className={inputCls} value={p.sale_price} onChange={(e) => set("product.sale_price", parseFloat(e.target.value) || 0)} /></div>

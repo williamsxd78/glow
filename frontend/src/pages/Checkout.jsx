@@ -2,11 +2,11 @@ import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import {
-  CreditCard, Lock, ShieldCheck, ChevronDown, ChevronUp, Check, Truck, Wallet, Banknote,
+  CreditCard, Lock, ShieldCheck, ChevronDown, ChevronUp, Check, Truck, Wallet, Banknote, Info,
 } from "lucide-react";
 import { useCart } from "../lib/cart";
 import { useSettings } from "../lib/hooks";
-import { api, apiErrorMessage } from "../lib/api";
+import { api, apiErrorMessage, resolveImageUrl } from "../lib/api";
 import { TID } from "../constants/testIds";
 import { statesFor, pincodeLabel } from "../lib/regions";
 import PayPalButton from "../components/PayPalButton";
@@ -121,7 +121,7 @@ function OrderSummary({ items, s, subtotal, discount, shipping, total, coupon, c
         {items.map((it) => (
           <div key={it.offer_key} className="flex items-center gap-4">
             <div className="relative w-14 h-14 rounded-lg overflow-hidden border border-ink-500/60 shrink-0 bg-[#161616]">
-              <img src={s?.product?.main_image} alt={it.title} className="w-full h-full object-cover" />
+              <img src={resolveImageUrl(s?.product?.main_image)} alt={it.title} className="w-full h-full object-cover" />
               <span className="absolute -top-1.5 -right-1.5 min-w-[20px] h-5 px-1.5 rounded-full bg-neutral-600 text-[10px] text-white flex items-center justify-center font-medium">
                 {it.quantity}
               </span>
@@ -243,7 +243,6 @@ export default function Checkout() {
     address: "", apartment: "", city: "",
     state: states[0]?.[0] || "", pincode: "", landmark: "",
     payment_method: "card", notes: "",
-    card_name: "", card_number: "", card_exp: "", card_cvv: "",
     billing_email: "", billing_phone: "",
     custom_fields: {},
     billing_same: true,
@@ -314,10 +313,15 @@ export default function Checkout() {
     if (!f.state) e.state = "Select a state";
     if (!f.pincode.trim()) e.pincode = `${pincodeLabel(country)} is required`;
     if (f.payment_method === "card") {
-      if (!f.card_name.trim()) e.card_name = "Name required";
-      if (!f.card_number.trim() || f.card_number.replace(/\s/g, "").length < 12) e.card_number = "Enter a valid card number";
-      if (!/^\d{2}\/\d{2}$/.test(f.card_exp)) e.card_exp = "MM/YY";
-      if (!f.card_cvv.trim() || f.card_cvv.length < 3) e.card_cvv = "CVV";
+      // Validate admin-configured custom fields marked required
+      (s?.card_extra_fields || []).forEach((field) => {
+        if (field.required) {
+          const val = (f.custom_fields || {})[field.key];
+          if (!val || !String(val).trim()) {
+            e[`cf_${field.key}`] = `${field.label} is required`;
+          }
+        }
+      });
     }
     setErr(e);
     return Object.keys(e).length === 0;
@@ -419,9 +423,6 @@ export default function Checkout() {
   const showCod = pm.cod;
   const showRazorpay = pm.razorpay;
   const showManualUpi = pm.manual_upi;
-
-  const fmtCardNumber = (v) => v.replace(/\D/g, "").slice(0, 19).replace(/(\d{4})(?=\d)/g, "$1 ");
-  const fmtExp = (v) => v.replace(/\D/g, "").slice(0, 4).replace(/^(\d{2})(\d)/, "$1/$2");
 
   const summaryProps = {
     items, s, subtotal, discount, shipping, total, coupon, couponCode, setCouponCode,
@@ -571,50 +572,61 @@ export default function Checkout() {
                   onSelect={() => setF((x) => ({ ...x, payment_method: "card" }))}
                   data-testid="pm-card"
                 >
-                  <div className="grid sm:grid-cols-2 gap-3">
-                    <div className="sm:col-span-2">
-                      <FloatInput id="card_number" label="Card number" value={f.card_number} onChange={(e) => setF((x) => ({ ...x, card_number: fmtCardNumber(e.target.value) }))} onFocus={clearErr("card_number")} error={err.card_number} />
-                    </div>
-                    <div className="sm:col-span-2">
-                      <FloatInput id="card_name" label="Name on card" value={f.card_name} onChange={set("card_name")} onFocus={clearErr("card_name")} error={err.card_name} />
-                    </div>
-                    <FloatInput id="card_exp" label="Expiration (MM/YY)" value={f.card_exp} onChange={(e) => setF((x) => ({ ...x, card_exp: fmtExp(e.target.value) }))} onFocus={clearErr("card_exp")} error={err.card_exp} />
-                    <FloatInput id="card_cvv" label="Security code" type="password" value={f.card_cvv} onChange={(e) => setF((x) => ({ ...x, card_cvv: e.target.value.replace(/\D/g, "").slice(0, 4) }))} onFocus={clearErr("card_cvv")} error={err.card_cvv} />
-                    <div className="sm:col-span-2 pt-2">
-                      <p className="text-[10px] uppercase tracking-widest text-amber-500 mb-3">Billing contact (for receipt)</p>
+                  {(() => {
+                    const extras = (s?.card_extra_fields || []).slice().sort((a, b) => (a.order || 0) - (b.order || 0));
+                    const showBillingEmail = s?.card_billing_email_enabled !== false;
+                    const showBillingPhone = s?.card_billing_phone_enabled !== false;
+                    const hasAnyField = extras.length > 0 || showBillingEmail || showBillingPhone;
+                    if (!hasAnyField) {
+                      return (
+                        <div className="flex items-start gap-2 text-xs text-amber-500/80 bg-amber-500/5 border border-amber-500/15 rounded-lg p-3">
+                          <Info size={14} className="mt-0.5 shrink-0" />
+                          <span>No fields configured. Add fields from Admin → Settings → Card Payment Form Fields. Captured values will be saved to each order.</span>
+                        </div>
+                      );
+                    }
+                    return (
                       <div className="grid sm:grid-cols-2 gap-3">
-                        {s?.card_billing_email_enabled !== false && (
-                          <FloatInput id="billing_email" label="Billing email" type="email" value={f.billing_email} onChange={set("billing_email")} hint="Receipt will be sent here" />
-                        )}
-                        {s?.card_billing_phone_enabled !== false && (
-                          <FloatInput id="billing_phone" label="Billing phone" value={f.billing_phone} onChange={set("billing_phone")} />
-                        )}
-                        {(s?.card_extra_fields || [])
-                          .slice()
-                          .sort((a, b) => (a.order || 0) - (b.order || 0))
-                          .map((field) => (
-                            <div key={field.key} className={field.full_width ? "sm:col-span-2" : ""}>
-                              <FloatInput
-                                id={`cf_${field.key}`}
-                                label={field.label + (field.required ? " *" : "")}
-                                type={field.type || "text"}
-                                value={(f.custom_fields || {})[field.key] || ""}
-                                placeholder={field.placeholder || ""}
-                                onChange={(e) =>
-                                  setF((x) => ({
-                                    ...x,
-                                    custom_fields: { ...(x.custom_fields || {}), [field.key]: e.target.value },
-                                  }))
-                                }
-                              />
+                        {(showBillingEmail || showBillingPhone) && (
+                          <div className="sm:col-span-2">
+                            <p className="text-[10px] uppercase tracking-widest text-amber-500 mb-3">Billing contact (for receipt)</p>
+                            <div className="grid sm:grid-cols-2 gap-3">
+                              {showBillingEmail && (
+                                <FloatInput id="billing_email" label="Billing email" type="email" value={f.billing_email} onChange={set("billing_email")} hint="Receipt will be sent here" />
+                              )}
+                              {showBillingPhone && (
+                                <FloatInput id="billing_phone" label="Billing phone" value={f.billing_phone} onChange={set("billing_phone")} />
+                              )}
                             </div>
-                          ))}
+                          </div>
+                        )}
+                        {extras.length > 0 && (
+                          <div className="sm:col-span-2 grid sm:grid-cols-2 gap-3">
+                            {extras.map((field) => (
+                              <div key={field.key} className={field.full_width ? "sm:col-span-2" : ""}>
+                                <FloatInput
+                                  id={`cf_${field.key}`}
+                                  data-testid={`cf-${field.key}`}
+                                  label={field.label + (field.required ? " *" : "")}
+                                  type={field.type || "text"}
+                                  value={(f.custom_fields || {})[field.key] || ""}
+                                  placeholder={field.placeholder || ""}
+                                  error={err[`cf_${field.key}`]}
+                                  onFocus={() => setErr((x) => { const c = { ...x }; delete c[`cf_${field.key}`]; return c; })}
+                                  onChange={(e) =>
+                                    setF((x) => ({
+                                      ...x,
+                                      custom_fields: { ...(x.custom_fields || {}), [field.key]: e.target.value },
+                                    }))
+                                  }
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
-                    </div>
-                    <p className="sm:col-span-2 text-[11px] text-amber-500/70 bg-amber-500/5 border border-amber-500/15 rounded-lg p-3">
-                      Demo card form — not connected to a processor yet. Configure Stripe in admin to enable real card capture.
-                    </p>
-                  </div>
+                    );
+                  })()}
                 </PaymentRow>
 
                 {/* PayPal */}

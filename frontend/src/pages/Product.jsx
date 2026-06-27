@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useSettings, useReviews } from "../lib/hooks";
+import { resolveImageUrl } from "../lib/api";
 import { useCart } from "../lib/cart";
 import Reviews from "../components/sections/Reviews";
 import Faq from "../components/sections/Faq";
@@ -49,7 +50,7 @@ export default function ProductPage() {
 
   const images = useMemo(() => {
     if (!s?.product?.main_image) return [];
-    const main = { url: s.product.main_image, alt: s.product.name };
+    const main = { url: resolveImageUrl(s.product.main_image), alt: s.product.name };
     // Only allow photos the admin has explicitly marked for the product
     // (we treat the gallery as lifestyle by default and DON'T mix it into the
     // primary product carousel — keeps the hero shot focused on the lamp).

@@ -8,6 +8,18 @@ export const api = axios.create({
   headers: { "Content-Type": "application/json" },
 });
 
+/**
+ * Resolve a stored image URL into one the browser can render.
+ * - Relative backend paths (e.g. "/api/files/...") are prefixed with REACT_APP_BACKEND_URL.
+ * - Absolute URLs (https://..., data:...) are returned as-is.
+ * - Empty/null returns empty string.
+ */
+export function resolveImageUrl(u) {
+  if (!u) return "";
+  if (u.startsWith("/api/")) return `${BACKEND_URL}${u}`;
+  return u;
+}
+
 // attach admin token if present
 api.interceptors.request.use((cfg) => {
   const token = localStorage.getItem("glowcamp_admin_token");

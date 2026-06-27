@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { api } from "../../lib/api";
 import { toast } from "sonner";
 import { Trash2, ArrowUp, ArrowDown } from "lucide-react";
+import ImageUpload, { resolveImageUrl } from "../../components/ImageUpload";
 
 export default function Gallery() {
   const [list, setList] = useState([]);
@@ -11,6 +12,10 @@ export default function Gallery() {
 
   async function create(e) {
     e.preventDefault();
+    if (!form.url.trim()) {
+      toast.error("Add an image URL or upload one");
+      return;
+    }
     await api.post("/admin/gallery", form);
     toast.success("Image added");
     setForm({ url: "", alt: "", order: 0 });
@@ -30,16 +35,23 @@ export default function Gallery() {
   return (
     <div>
       <h1 className="font-display text-2xl sm:text-3xl mb-6">Gallery</h1>
-      <form onSubmit={create} className="bg-[#0E0E0E] border border-ink-500/60 rounded-2xl p-5 grid sm:grid-cols-2 gap-3 mb-8">
-        <input className={`${inputCls} sm:col-span-2`} placeholder="Image URL" value={form.url} onChange={(e) => setForm({ ...form, url: e.target.value })} required />
-        <input className={inputCls} placeholder="Alt text" value={form.alt} onChange={(e) => setForm({ ...form, alt: e.target.value })} />
-        <input type="number" className={inputCls} placeholder="Order" value={form.order} onChange={(e) => setForm({ ...form, order: parseInt(e.target.value) || 0 })} />
-        <button className="btn-primary sm:col-span-2 justify-center">Add Image</button>
+      <form onSubmit={create} className="bg-[#0E0E0E] border border-ink-500/60 rounded-2xl p-5 mb-8 space-y-3">
+        <ImageUpload
+          value={form.url}
+          onChange={(url) => setForm((f) => ({ ...f, url }))}
+          label="Photo"
+          testIdPrefix="gallery"
+        />
+        <div className="grid sm:grid-cols-2 gap-3">
+          <input className={inputCls} placeholder="Alt text" value={form.alt} onChange={(e) => setForm({ ...form, alt: e.target.value })} />
+          <input type="number" className={inputCls} placeholder="Order" value={form.order} onChange={(e) => setForm({ ...form, order: parseInt(e.target.value) || 0 })} />
+        </div>
+        <button data-testid="gallery-submit" className="btn-primary w-full justify-center">Add Image</button>
       </form>
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {list.map((g) => (
           <div key={g.id} className="bg-[#0E0E0E] border border-ink-500/60 rounded-2xl overflow-hidden">
-            <img src={g.url} alt={g.alt} className="w-full aspect-square object-cover" />
+            <img src={resolveImageUrl(g.url)} alt={g.alt} className="w-full aspect-square object-cover" />
             <div className="p-3 flex items-center justify-between">
               <div className="text-xs text-neutral-400 truncate flex-1">{g.alt || g.url}</div>
               <div className="flex gap-1">

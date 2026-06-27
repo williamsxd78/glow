@@ -1,0 +1,47 @@
+{
+  "summary": "Iteration 3 testing complete. Backend: 49/49 pytest pass (8 new for iter3 + 41 regression). All target features verified: (1) dynamic Card Payment Form Fields with capture toggle correctly drops capture=false keys from saved orders, (2) admin upload endpoint accepts PNG and rejects non-image / oversize / unauthenticated, (3) GET /api/files/{path} serves bytes with correct Content-Type. Frontend: Checkout has zero hardcoded card inputs and shows the friendly empty-state banner. Admin Settings shows Capture/Req/Full checkboxes per field with capture defaulting to checked. Admin Gallery and Admin Product both render the ImageUpload component with the documented data-testids. No critical or P1 issues found.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "POST /api/admin/uploads", "issue": "Oversize check happens after file.read() — for very large uploads the entire body is buffered in memory before the 400 is returned. Consider streaming/early-abort or relying on FastAPI/Starlette UploadFile spool_max_size. Low priority since limit is 8 MB."},
+      {"endpoint": "GET /api/files/{path:path}", "issue": "No range/streaming response — entire object is loaded into memory then returned. Fine for <8 MB images but document the implicit limit."},
+      {"endpoint": "POST /api/admin/uploads", "issue": "obj_storage.put_object is a synchronous requests.put call inside an async route — blocks the event loop. Consider asyncio.to_thread(...) wrapping or an async HTTP client (httpx)."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "/cart, /checkout, /admin/* (top marquee)", "issues": ["TEST_announcement_1bfb32 leftover from iter1/iter2 still scrolls. Cosmetic only — admin can update Settings → Announcement → Text to default 'Limited Launch Offer ...'."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iteration3.py",
+    "/app/backend/tests/test_iteration2.py",
+    "/app/backend/tests/backend_test.py",
+    "/app/test_reports/pytest/iter3_results.xml"
+  ],
+  "action_items": [
+    "(Optional) Wrap obj_storage.put_object / get_object in asyncio.to_thread() inside the upload + serve endpoints so the FastAPI event loop is not blocked during external storage I/O.",
+    "(Optional) Reset Settings → Announcement → Text from the leftover 'TEST_announcement_1bfb32' to the default 'Limited Launch Offer ...' string so public marquee looks production-ready.",
+    "(Optional) Add a server-side validator (Pydantic conlist or min_length=1) on Settings.card_extra_fields[*].key — currently any string is accepted including duplicates."
+  ],
+  "critical_code_review_comments": [
+    "server.py is now 763 lines (was 538 in iter2) and crossed the 700-line guideline mentioned previously. Split into routers/admin_uploads.py + routers/files.py + routers/admin_settings.py at the next change.",
+    "storage.py uses a global module-level _storage_key. Works under uvicorn single-process but should switch to an asyncio.Lock + lazy_property pattern if multiple workers are added (gunicorn -w 4) to avoid 403→re-init races.",
+    "create_order's custom_fields filter (server.py ~278) iterates s.card_extra_fields without deduplicating by key. If the admin saves two fields with the same key, both will be saved with the same value silently — add a duplicate-key validation in admin_update_settings.",
+    "Order.custom_fields is dict (no schema). For long-term reporting consider promoting it to List[CustomFieldValue] with key/label/value so admin CSV export can include the captured fields with their human-readable labels.",
+    "ImageUpload data-testids 'product-main-upload-btn' and 'product-main-url' duplicate the ones in Gallery if reused — verify the component takes a 'testid_prefix' prop so duplicate IDs don't appear when both forms are on a page (today they are on different pages so fine, but document for future use).",
+    "Frontend resolveImageUrl(u) (lib/api.js) — verified working: existing absolute https URLs (customer-assets.emergentagent.com main image) continue to render in the home hero, AND relative /api/files/... URLs will resolve correctly because REACT_APP_BACKEND_URL prefix is applied. Backward-compat preserved."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iteration3.py (new — 8 tests for capture filter + uploads + serve)"
+  ],
+  "success_rate": {"backend": "100% (49/49 across iter1+iter2+iter3)", "frontend": "100% on the iter3 surface area tested (checkout empty-state banner, admin settings capture/req/full, admin gallery ImageUpload, admin product ImageUpload)"},
+  "test_credentials": "admin@glowcamp.com / GlowCamp@2026",
+  "seed_data_creation": "Tests created one TEST_capture order via POST /api/orders during the capture-filter test (TEST_cardholder=John Doe, TEST_promo dropped). card_extra_fields is reset to [] at end of test run so the checkout empty-state banner is visible on the public site. No leftover settings pollution.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Three pytest files now cover the full API surface: backend_test.py (iter1 regression), test_iteration2.py (iter2 features), test_iteration3.py (iter3 features). Run with `pytest /app/backend/tests/ -v`. Frontend testids used in this iteration: pm-card, card-field-add, card-field-capture-0, card-field-key-0, card-field-label-0, card-field-type-0, card-field-remove-0, gallery-input, gallery-upload-btn, gallery-url, product-main-upload-btn, product-main-url. localStorage cart key is `glowcamp_cart_v1` (array of {offer_key, title, quantity, unit_price}) — useful to seed checkout in playwright. The Capture checkbox in Settings defaults to checked when '+ Add field' is clicked and persists correctly through PUT /api/admin/settings.",
+  "rca of the issue": "No P0/P1 issues. Every acceptance criterion in the review_request was validated. Backend filter at server.py line ~278-282 correctly uses `if f.capture and (payload.custom_fields or {}).get(f.key)` so capture=false keys are silently dropped from order.custom_fields. The /admin/uploads endpoint validates content-type (415-equivalent 400) BEFORE reading payload and validates size after read; admin token enforcement returns 401 when Authorization header is missing. The /api/files/{path:path} endpoint correctly proxies bytes from Emergent Object Storage with the stored content_type."
+}

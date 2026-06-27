@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowRight, PlayCircle, Sparkles, Wind, Heart, Home, Boxes } from "lucide-react";
 import { useSettings } from "../../lib/hooks";
+import { resolveImageUrl } from "../../lib/api";
 import { TID } from "../../constants/testIds";
 
 export default function Hero() {
@@ -98,7 +99,7 @@ export default function Hero() {
           <div className="absolute inset-12 flame-flicker" />
           <div className="absolute inset-0 rounded-full bg-gradient-to-br from-amber-500/0 via-amber-600/10 to-transparent blur-3xl" />
           <img
-            src={p.main_image}
+            src={resolveImageUrl(p.main_image)}
             alt={p.name}
             className="relative z-10 w-full h-full object-cover rounded-3xl border border-ink-500/60 floaty"
           />

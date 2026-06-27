@@ -3,6 +3,7 @@ import { useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { CheckCircle2, X } from "lucide-react";
 import { useSettings } from "../lib/hooks";
+import { resolveImageUrl } from "../lib/api";
 
 const FIRST_NAMES = [
   "Justin","Sarah","Michael","Ashley","James","Jessica","David","Emily","Daniel","Megan",
@@ -89,7 +90,7 @@ export default function LivePurchaseToasts() {
           >
             <div className="relative w-10 h-10 sm:w-11 sm:h-11 rounded-xl overflow-hidden border border-ink-500/60 shrink-0 bg-[#161616]">
               {s?.product?.main_image && (
-                <img src={s.product.main_image} alt="" className="w-full h-full object-cover" />
+                <img src={resolveImageUrl(s.product.main_image)} alt="" className="w-full h-full object-cover" />
               )}
               <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-amber-500 text-black flex items-center justify-center">
                 <CheckCircle2 size={11} />

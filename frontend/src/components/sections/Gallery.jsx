@@ -1,5 +1,6 @@
 import React from "react";
 import { useGallery } from "../../lib/hooks";
+import { resolveImageUrl } from "../../lib/api";
 
 export default function Gallery() {
   const { data } = useGallery();
@@ -15,7 +16,7 @@ export default function Gallery() {
           {data.map((g) => (
             <div key={g.id} className="shrink-0 w-64 sm:w-80 snap-start">
               <div className="aspect-[4/5] rounded-2xl overflow-hidden border border-ink-500/60 bg-black">
-                <img src={g.url} alt={g.alt} className="w-full h-full object-cover hover:scale-105 transition-transform duration-700" />
+                <img src={resolveImageUrl(g.url)} alt={g.alt} className="w-full h-full object-cover hover:scale-105 transition-transform duration-700" />
               </div>
               {g.alt && <p className="mt-3 text-xs text-neutral-400">{g.alt}</p>}
             </div>

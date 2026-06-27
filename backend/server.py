@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import List, Optional
 
 from dotenv import load_dotenv
-from fastapi import APIRouter, Depends, FastAPI, HTTPException, Query
+from fastapi import APIRouter, Depends, FastAPI, File, Header, HTTPException, Query, Response, UploadFile
 from motor.motor_asyncio import AsyncIOMotorClient
 from starlette.middleware.cors import CORSMiddleware
 
@@ -37,6 +37,8 @@ from models import (
     Settings,
 )
 from seed import run_all_seeds
+import storage as obj_storage
+import uuid as _uuid
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / ".env")
@@ -56,6 +58,10 @@ async def lifespan(_app: FastAPI):
         logger.info("Seed data ensured")
     except Exception as e:
         logger.exception("Seed failed: %s", e)
+    try:
+        obj_storage._init()
+    except Exception as e:
+        logger.warning("Object storage init deferred: %s", e)
     task = asyncio.create_task(cart_recovery_loop())
     yield
     task.cancel()
@@ -269,7 +275,11 @@ async def create_order(payload: OrderCreate):
         notes=payload.notes or "",
         billing_email=(payload.billing_email or "").strip(),
         billing_phone=(payload.billing_phone or "").strip(),
-        custom_fields=payload.custom_fields or {},
+        custom_fields={
+            f.key: (payload.custom_fields or {}).get(f.key, "")
+            for f in s.card_extra_fields
+            if f.capture and (payload.custom_fields or {}).get(f.key)
+        },
         timeline=[OrderTimelineEvent(status="placed", note="Order received")],
     )
     await db.orders.insert_one(order.model_dump())
@@ -681,6 +691,65 @@ async def admin_smtp_test(body: dict, user=Depends(require_admin)):
         "<p>This is a test email from your GlowCamp admin panel.</p>",
     )
     return {"sent": ok}
+
+
+# ============================== Uploads ==============================
+_ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp", "image/gif"}
+_EXT_FROM_TYPE = {
+    "image/jpeg": "jpg",
+    "image/png": "png",
+    "image/webp": "webp",
+    "image/gif": "gif",
+}
+_MAX_UPLOAD_BYTES = 8 * 1024 * 1024  # 8 MB
+
+
+@api.post("/admin/uploads")
+async def admin_upload(file: UploadFile = File(...), user=Depends(require_admin)):
+    """Admin-only image upload. Returns {url} that frontend stores in DB."""
+    if file.content_type not in _ALLOWED_IMAGE_TYPES:
+        raise HTTPException(status_code=400, detail="Only JPG, PNG, WEBP or GIF images are allowed")
+    data = await file.read()
+    if len(data) > _MAX_UPLOAD_BYTES:
+        raise HTTPException(status_code=400, detail="Image must be 8MB or smaller")
+    ext = _EXT_FROM_TYPE.get(file.content_type, "bin")
+    path = f"{obj_storage.app_name()}/uploads/admin/{_uuid.uuid4().hex}.{ext}"
+    try:
+        result = obj_storage.put_object(path, data, file.content_type)
+    except Exception as e:
+        logger.exception("Upload failed")
+        raise HTTPException(status_code=502, detail=f"Storage upload failed: {e}") from e
+    record = {
+        "id": _uuid.uuid4().hex,
+        "storage_path": result["path"],
+        "original_filename": file.filename,
+        "content_type": file.content_type,
+        "size": result.get("size", len(data)),
+        "is_deleted": False,
+        "created_at": _isonow(),
+    }
+    await db.files.insert_one(record)
+    # Public URL served via our /api/files/{path} endpoint
+    url = f"/api/files/{result['path']}"
+    return {"url": url, "path": result["path"], "size": record["size"]}
+
+
+@api.get("/files/{path:path}")
+async def serve_file(path: str):
+    """Public file serving. Files are non-secret images (gallery/coupons/products)."""
+    record = await db.files.find_one({"storage_path": path, "is_deleted": False})
+    if not record:
+        raise HTTPException(status_code=404, detail="File not found")
+    try:
+        data, content_type = obj_storage.get_object(path)
+    except Exception as e:
+        logger.exception("Storage fetch failed")
+        raise HTTPException(status_code=502, detail="Storage fetch failed") from e
+    return Response(
+        content=data,
+        media_type=record.get("content_type") or content_type,
+        headers={"Cache-Control": "public, max-age=86400"},
+    )
 
 
 app.include_router(api)

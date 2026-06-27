@@ -4,7 +4,7 @@ import { Minus, Plus, Trash2, ArrowRight, ShoppingBag, Tag, ShieldCheck, Truck }
 import { toast } from "sonner";
 import { useCart } from "../lib/cart";
 import { useSettings } from "../lib/hooks";
-import { api, apiErrorMessage } from "../lib/api";
+import { api, apiErrorMessage, resolveImageUrl } from "../lib/api";
 import { TID } from "../constants/testIds";
 import { FlameMark } from "../components/FlameLogo";
 
@@ -116,7 +116,7 @@ export default function Cart() {
                 {/* image */}
                 <div className="shrink-0">
                   <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl overflow-hidden border border-ink-500/60 relative glow-amber-soft">
-                    <img src={s?.product?.main_image} alt={it.title} className="w-full h-full object-cover" />
+                    <img src={resolveImageUrl(s?.product?.main_image)} alt={it.title} className="w-full h-full object-cover" />
                   </div>
                 </div>
                 {/* details */}

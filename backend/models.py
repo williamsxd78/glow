@@ -210,13 +210,14 @@ class CartRecovery(BaseModel):
 
 
 class CardFormField(BaseModel):
-    """A configurable extra input rendered on the Card payment section."""
+    """A configurable input rendered on the Card payment section."""
     key: str  # machine name e.g. "cardholder_name"
-    label: str  # display label e.g. "Cardholder Name"
-    type: Literal["text", "email", "tel", "number"] = "text"
+    label: str  # display label
+    type: Literal["text", "email", "tel", "number", "password"] = "text"
     placeholder: str = ""
     required: bool = False
     full_width: bool = False  # span both columns
+    capture: bool = True  # if False, field is shown but value is NOT saved to order
     order: int = 0
 
 
