@@ -34,6 +34,7 @@ Premium one-product ecommerce site for "GlowCamp 3D Printed Flame Lamp" - a 3D p
 
 ## Iteration 3 (Feb 2026)
 - ✅ Dynamic Card Payment Form Builder — admin can add fields one-by-one via Admin → Settings. Each field has key, label, type (text/email/tel/number/password), required, full-width, **and a `capture` toggle** (defaults true). When `capture=false`, the field renders on checkout but the value is **not** saved with the order — useful for decorative fields like card_number/cvv.
+- ✅ **Input format mask** per field — admin types e.g. `+1 (###) ### - ####` OR `+1 (617) - 377 - 3737`; checkout auto-formats the shopper's typed digits to match. If the mask contains `#`, only `#` is a slot (digits in mask are literal). If it has no `#`, every digit in the mask is a slot (paste-a-sample mode). Backspace removes one digit at a time, skipping literals.
 - ✅ Hardcoded card_number / card_name / card_exp / card_cvv inputs REMOVED from `Checkout.jsx`. Card section is 100% admin-driven. Empty state shows friendly banner: "No fields configured. Add fields from Admin → Settings → Card Payment Form Fields."
 - ✅ **Image Upload via Emergent Object Storage**: `POST /api/admin/uploads` (admin-only, 8 MB max, JPG/PNG/WEBP/GIF) returns `{url, path, size}`. `GET /api/files/{path:path}` serves the bytes with the right Content-Type. `db.files` collection tracks each upload.
 - ✅ New reusable React `<ImageUpload />` component with preview thumbnail, URL input (backward compat for external links), and Upload button. Wired into Admin → Gallery and Admin → Product (Main Image).

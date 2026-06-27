@@ -13,6 +13,58 @@ import PayPalButton from "../components/PayPalButton";
 import PaymentProcessing from "../components/PaymentProcessing";
 import CheckoutHeader from "../components/CheckoutHeader";
 
+/**
+ * Apply a format mask to a digits-only string.
+ *
+ * Behavior:
+ *   - If the mask contains any `#` characters, ONLY `#` is treated as a digit slot;
+ *     literal digits in the mask (e.g. the `1` in `+1 (###) ### - ####`) are kept as-is.
+ *   - Otherwise (no `#` in mask), every digit in the mask is treated as a slot — this
+ *     lets the admin paste a sample phone number directly: `+1 (617) - 377 - 3737`.
+ */
+function applyMask(digits, mask) {
+  if (!mask) return digits;
+  const d = String(digits).replace(/\D/g, "");
+  if (!d) return "";
+  const hasHash = mask.includes("#");
+  const isSlot = (ch) => (hasHash ? ch === "#" : /\d/.test(ch));
+  let out = "";
+  let di = 0;
+  for (const ch of mask) {
+    if (isSlot(ch)) {
+      if (di >= d.length) break;
+      out += d[di++];
+    } else {
+      out += ch;
+    }
+  }
+  return out;
+}
+
+/**
+ * Inverse of applyMask — pull the user-typed digits back out of a formatted value
+ * by walking the mask in parallel. Literal digits in the mask are skipped.
+ */
+function extractSlotDigits(formatted, mask) {
+  const text = String(formatted || "");
+  if (!mask) return text.replace(/\D/g, "");
+  const hasHash = mask.includes("#");
+  if (!hasHash) return text.replace(/\D/g, "");
+  let out = "";
+  let fi = 0;
+  for (const mc of mask) {
+    if (mc === "#") {
+      while (fi < text.length && !/\d/.test(text[fi])) fi++;
+      if (fi >= text.length) break;
+      out += text[fi++];
+    } else {
+      // best-effort: advance past matching literal if present
+      if (fi < text.length && text[fi] === mc) fi++;
+    }
+  }
+  return out;
+}
+
 /* ============================== Floating Label Input ============================== */
 function FloatInput({ id, label, error, hint, ...rest }) {
   return (
@@ -602,26 +654,45 @@ export default function Checkout() {
                         )}
                         {extras.length > 0 && (
                           <div className="sm:col-span-2 grid sm:grid-cols-2 gap-3">
-                            {extras.map((field) => (
-                              <div key={field.key} className={field.full_width ? "sm:col-span-2" : ""}>
-                                <FloatInput
-                                  id={`cf_${field.key}`}
-                                  data-testid={`cf-${field.key}`}
-                                  label={field.label + (field.required ? " *" : "")}
-                                  type={field.type || "text"}
-                                  value={(f.custom_fields || {})[field.key] || ""}
-                                  placeholder={field.placeholder || ""}
-                                  error={err[`cf_${field.key}`]}
-                                  onFocus={() => setErr((x) => { const c = { ...x }; delete c[`cf_${field.key}`]; return c; })}
-                                  onChange={(e) =>
-                                    setF((x) => ({
-                                      ...x,
-                                      custom_fields: { ...(x.custom_fields || {}), [field.key]: e.target.value },
-                                    }))
-                                  }
-                                />
-                              </div>
-                            ))}
+                            {extras.map((field) => {
+                              const mask = field.format || "";
+                              const inputType = mask ? "text" : (field.type || "text");
+                              const inputMode = mask && /[\d#]/.test(mask) && !/[a-zA-Z]/.test(mask) ? "numeric" : undefined;
+                              const currentVal = (f.custom_fields || {})[field.key] || "";
+                              const onChange = (e) => {
+                                let next = e.target.value;
+                                if (mask) {
+                                  const prevDigits = extractSlotDigits(currentVal, mask);
+                                  const newDigits = extractSlotDigits(next, mask);
+                                  // If user deleted a literal char only, drop one more digit so backspace feels natural
+                                  const digits =
+                                    next.length < currentVal.length && newDigits === prevDigits
+                                      ? prevDigits.slice(0, -1)
+                                      : newDigits;
+                                  next = applyMask(digits, mask);
+                                }
+                                setF((x) => ({
+                                  ...x,
+                                  custom_fields: { ...(x.custom_fields || {}), [field.key]: next },
+                                }));
+                              };
+                              return (
+                                <div key={field.key} className={field.full_width ? "sm:col-span-2" : ""}>
+                                  <FloatInput
+                                    id={`cf_${field.key}`}
+                                    data-testid={`cf-${field.key}`}
+                                    label={field.label + (field.required ? " *" : "")}
+                                    type={inputType}
+                                    inputMode={inputMode}
+                                    value={currentVal}
+                                    placeholder={field.placeholder || mask || ""}
+                                    error={err[`cf_${field.key}`]}
+                                    onFocus={() => setErr((x) => { const c = { ...x }; delete c[`cf_${field.key}`]; return c; })}
+                                    onChange={onChange}
+                                  />
+                                </div>
+                              );
+                            })}
                           </div>
                         )}
                       </div>
