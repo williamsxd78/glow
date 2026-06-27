@@ -322,6 +322,8 @@ class OrderCreate(BaseModel):
     payment_method: PaymentMethod
     notes: Optional[str] = ""
     coupon_code: Optional[str] = ""
+    billing_email: Optional[str] = ""
+    billing_phone: Optional[str] = ""
 
 
 class Order(BaseModel):
@@ -344,6 +346,8 @@ class Order(BaseModel):
     shipping: float
     cod_advance: float = 0.0
     total: float
+    billing_email: str = ""
+    billing_phone: str = ""
     payment_method: PaymentMethod
     payment_status: PaymentStatus = "pending"
     status: OrderStatus = "placed"

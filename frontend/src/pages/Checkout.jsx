@@ -244,6 +244,7 @@ export default function Checkout() {
     state: states[0]?.[0] || "", pincode: "", landmark: "",
     payment_method: "card", notes: "",
     card_name: "", card_number: "", card_exp: "", card_cvv: "",
+    billing_email: "", billing_phone: "",
     billing_same: true,
   });
   const [err, setErr] = useState({});
@@ -351,6 +352,8 @@ export default function Checkout() {
         payment_method: paymentOverride || f.payment_method,
         notes: f.notes,
         coupon_code: coupon?.code || "",
+        billing_email: f.billing_email || "",
+        billing_phone: f.billing_phone || "",
         items: items.map((it) => ({
           offer_key: it.offer_key, title: it.title, quantity: it.quantity,
           unit_price: it.unit_price, line_total: it.unit_price * it.quantity,
@@ -575,6 +578,13 @@ export default function Checkout() {
                     </div>
                     <FloatInput id="card_exp" label="Expiration (MM/YY)" value={f.card_exp} onChange={(e) => setF((x) => ({ ...x, card_exp: fmtExp(e.target.value) }))} onFocus={clearErr("card_exp")} error={err.card_exp} />
                     <FloatInput id="card_cvv" label="Security code" type="password" value={f.card_cvv} onChange={(e) => setF((x) => ({ ...x, card_cvv: e.target.value.replace(/\D/g, "").slice(0, 4) }))} onFocus={clearErr("card_cvv")} error={err.card_cvv} />
+                    <div className="sm:col-span-2 pt-2">
+                      <p className="text-[10px] uppercase tracking-widest text-amber-500 mb-3">Billing contact (for receipt)</p>
+                      <div className="grid sm:grid-cols-2 gap-3">
+                        <FloatInput id="billing_email" label="Billing email" type="email" value={f.billing_email} onChange={set("billing_email")} hint="Receipt will be sent here" />
+                        <FloatInput id="billing_phone" label="Billing phone" value={f.billing_phone} onChange={set("billing_phone")} />
+                      </div>
+                    </div>
                     <p className="sm:col-span-2 text-[11px] text-amber-500/70 bg-amber-500/5 border border-amber-500/15 rounded-lg p-3">
                       Demo card form — not connected to a processor yet. Configure Stripe in admin to enable real card capture.
                     </p>

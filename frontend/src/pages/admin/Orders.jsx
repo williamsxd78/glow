@@ -134,6 +134,13 @@ export default function Orders() {
               <div><span className="text-neutral-500">Phone:</span> {active.phone}</div>
               <div><span className="text-neutral-500">Email:</span> {active.email}</div>
               <div><span className="text-neutral-500">Address:</span> {active.address}, {active.city}, {active.state} {active.pincode}</div>
+              {(active.billing_email || active.billing_phone) && (
+                <div className="mt-2 pt-2 border-t border-ink-500/40">
+                  <div className="text-[10px] uppercase tracking-widest text-amber-500 mb-1">Billing contact (card)</div>
+                  {active.billing_email && <div><span className="text-neutral-500">Billing email:</span> {active.billing_email}</div>}
+                  {active.billing_phone && <div><span className="text-neutral-500">Billing phone:</span> {active.billing_phone}</div>}
+                </div>
+              )}
               <div><span className="text-neutral-500">Notes:</span> {active.notes || "—"}</div>
             </div>
             <div className="space-y-1 mb-5 text-sm">

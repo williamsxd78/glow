@@ -264,6 +264,8 @@ async def create_order(payload: OrderCreate):
         payment_status="pending",
         status="placed",
         notes=payload.notes or "",
+        billing_email=(payload.billing_email or "").strip(),
+        billing_phone=(payload.billing_phone or "").strip(),
         timeline=[OrderTimelineEvent(status="placed", note="Order received")],
     )
     await db.orders.insert_one(order.model_dump())
