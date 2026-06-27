@@ -141,6 +141,14 @@ export default function Orders() {
                   {active.billing_phone && <div><span className="text-neutral-500">Billing phone:</span> {active.billing_phone}</div>}
                 </div>
               )}
+              {active.custom_fields && Object.keys(active.custom_fields).length > 0 && (
+                <div className="mt-2 pt-2 border-t border-ink-500/40">
+                  <div className="text-[10px] uppercase tracking-widest text-amber-500 mb-1">Card form extras</div>
+                  {Object.entries(active.custom_fields).map(([k, v]) => (
+                    <div key={k}><span className="text-neutral-500">{k.replace(/_/g, " ")}:</span> {v}</div>
+                  ))}
+                </div>
+              )}
               <div><span className="text-neutral-500">Notes:</span> {active.notes || "—"}</div>
             </div>
             <div className="space-y-1 mb-5 text-sm">

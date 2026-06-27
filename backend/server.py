@@ -163,6 +163,9 @@ def public_view(s: Settings) -> PublicSettings:
         custom_states=s.custom_states,
         paypal_client_id=s.payment.paypal_client_id,
         paypal_mode=s.payment.paypal_mode,
+        card_billing_email_enabled=s.card_billing_email_enabled,
+        card_billing_phone_enabled=s.card_billing_phone_enabled,
+        card_extra_fields=s.card_extra_fields,
     )
 
 
@@ -266,6 +269,7 @@ async def create_order(payload: OrderCreate):
         notes=payload.notes or "",
         billing_email=(payload.billing_email or "").strip(),
         billing_phone=(payload.billing_phone or "").strip(),
+        custom_fields=payload.custom_fields or {},
         timeline=[OrderTimelineEvent(status="placed", note="Order received")],
     )
     await db.orders.insert_one(order.model_dump())

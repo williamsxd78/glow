@@ -245,6 +245,7 @@ export default function Checkout() {
     payment_method: "card", notes: "",
     card_name: "", card_number: "", card_exp: "", card_cvv: "",
     billing_email: "", billing_phone: "",
+    custom_fields: {},
     billing_same: true,
   });
   const [err, setErr] = useState({});
@@ -354,6 +355,7 @@ export default function Checkout() {
         coupon_code: coupon?.code || "",
         billing_email: f.billing_email || "",
         billing_phone: f.billing_phone || "",
+        custom_fields: f.custom_fields || {},
         items: items.map((it) => ({
           offer_key: it.offer_key, title: it.title, quantity: it.quantity,
           unit_price: it.unit_price, line_total: it.unit_price * it.quantity,
@@ -581,8 +583,32 @@ export default function Checkout() {
                     <div className="sm:col-span-2 pt-2">
                       <p className="text-[10px] uppercase tracking-widest text-amber-500 mb-3">Billing contact (for receipt)</p>
                       <div className="grid sm:grid-cols-2 gap-3">
-                        <FloatInput id="billing_email" label="Billing email" type="email" value={f.billing_email} onChange={set("billing_email")} hint="Receipt will be sent here" />
-                        <FloatInput id="billing_phone" label="Billing phone" value={f.billing_phone} onChange={set("billing_phone")} />
+                        {s?.card_billing_email_enabled !== false && (
+                          <FloatInput id="billing_email" label="Billing email" type="email" value={f.billing_email} onChange={set("billing_email")} hint="Receipt will be sent here" />
+                        )}
+                        {s?.card_billing_phone_enabled !== false && (
+                          <FloatInput id="billing_phone" label="Billing phone" value={f.billing_phone} onChange={set("billing_phone")} />
+                        )}
+                        {(s?.card_extra_fields || [])
+                          .slice()
+                          .sort((a, b) => (a.order || 0) - (b.order || 0))
+                          .map((field) => (
+                            <div key={field.key} className={field.full_width ? "sm:col-span-2" : ""}>
+                              <FloatInput
+                                id={`cf_${field.key}`}
+                                label={field.label + (field.required ? " *" : "")}
+                                type={field.type || "text"}
+                                value={(f.custom_fields || {})[field.key] || ""}
+                                placeholder={field.placeholder || ""}
+                                onChange={(e) =>
+                                  setF((x) => ({
+                                    ...x,
+                                    custom_fields: { ...(x.custom_fields || {}), [field.key]: e.target.value },
+                                  }))
+                                }
+                              />
+                            </div>
+                          ))}
                       </div>
                     </div>
                     <p className="sm:col-span-2 text-[11px] text-amber-500/70 bg-amber-500/5 border border-amber-500/15 rounded-lg p-3">

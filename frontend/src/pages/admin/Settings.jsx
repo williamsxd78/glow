@@ -158,6 +158,55 @@ export default function Settings() {
         <Field label="Free Shipping Threshold ($)"><input type="number" className={inputCls} value={s.payment.free_shipping_threshold} onChange={(e) => up("payment.free_shipping_threshold", parseFloat(e.target.value) || 0)} /></Field>
       </Section>
 
+      <Section title="Card Payment Form Fields">
+        <Field label="Show Billing Email">
+          <Toggle checked={s.card_billing_email_enabled !== false} onChange={(v) => up("card_billing_email_enabled", v)} label="Capture billing email" />
+        </Field>
+        <Field label="Show Billing Phone">
+          <Toggle checked={s.card_billing_phone_enabled !== false} onChange={(v) => up("card_billing_phone_enabled", v)} label="Capture billing phone" />
+        </Field>
+        <Field full label="Extra fields (rendered below the card form)">
+          <div className="space-y-3">
+            {(s.card_extra_fields || []).map((field, i) => (
+              <div key={i} className="bg-[#161616] border border-ink-500/60 rounded-lg p-3 grid sm:grid-cols-12 gap-2 items-center">
+                <input className={`${inputCls} sm:col-span-3`} placeholder="key (e.g. cardholder_name)" value={field.key} onChange={(e) => {
+                  const arr = [...s.card_extra_fields]; arr[i] = { ...arr[i], key: e.target.value.replace(/\s+/g, "_").toLowerCase() }; up("card_extra_fields", arr);
+                }} />
+                <input className={`${inputCls} sm:col-span-3`} placeholder="Label (e.g. Cardholder Name)" value={field.label} onChange={(e) => {
+                  const arr = [...s.card_extra_fields]; arr[i] = { ...arr[i], label: e.target.value }; up("card_extra_fields", arr);
+                }} />
+                <select className={`${inputCls} sm:col-span-2`} value={field.type || "text"} onChange={(e) => {
+                  const arr = [...s.card_extra_fields]; arr[i] = { ...arr[i], type: e.target.value }; up("card_extra_fields", arr);
+                }}>
+                  <option value="text">Text</option>
+                  <option value="email">Email</option>
+                  <option value="tel">Phone</option>
+                  <option value="number">Number</option>
+                </select>
+                <label className="sm:col-span-2 flex items-center gap-1.5 text-xs cursor-pointer">
+                  <input type="checkbox" className="accent-amber-500" checked={!!field.required} onChange={(e) => {
+                    const arr = [...s.card_extra_fields]; arr[i] = { ...arr[i], required: e.target.checked }; up("card_extra_fields", arr);
+                  }} /> Required
+                </label>
+                <label className="sm:col-span-1 flex items-center gap-1.5 text-xs cursor-pointer">
+                  <input type="checkbox" className="accent-amber-500" checked={!!field.full_width} onChange={(e) => {
+                    const arr = [...s.card_extra_fields]; arr[i] = { ...arr[i], full_width: e.target.checked }; up("card_extra_fields", arr);
+                  }} /> Full
+                </label>
+                <button type="button" onClick={() => {
+                  const arr = [...s.card_extra_fields]; arr.splice(i, 1); up("card_extra_fields", arr);
+                }} className="sm:col-span-1 text-neutral-400 hover:text-red-400 text-xs justify-self-end">Remove</button>
+              </div>
+            ))}
+            <button type="button" onClick={() => {
+              const arr = [...(s.card_extra_fields || []), { key: "new_field_" + ((s.card_extra_fields || []).length + 1), label: "New Field", type: "text", placeholder: "", required: false, full_width: false, order: (s.card_extra_fields || []).length }];
+              up("card_extra_fields", arr);
+            }} className="btn-ghost text-sm">+ Add field</button>
+            <p className="text-[11px] text-neutral-500">Examples: <span className="font-mono">cardholder_name</span> (Text), <span className="font-mono">billing_address</span> (Text, Full), <span className="font-mono">gst_number</span> (Text). Captured values are saved to each order and visible in Admin → Orders → View.</p>
+          </div>
+        </Field>
+      </Section>
+
       <Section title="SMTP Email Settings">
         <Field label="Enabled"><Toggle checked={s.smtp.enabled} onChange={(v) => up("smtp.enabled", v)} label="Send transactional emails" /></Field>
         <Field label="Use TLS"><Toggle checked={s.smtp.use_tls} onChange={(v) => up("smtp.use_tls", v)} label="STARTTLS" /></Field>

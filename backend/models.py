@@ -209,6 +209,17 @@ class CartRecovery(BaseModel):
     max_age_hours: int = 24
 
 
+class CardFormField(BaseModel):
+    """A configurable extra input rendered on the Card payment section."""
+    key: str  # machine name e.g. "cardholder_name"
+    label: str  # display label e.g. "Cardholder Name"
+    type: Literal["text", "email", "tel", "number"] = "text"
+    placeholder: str = ""
+    required: bool = False
+    full_width: bool = False  # span both columns
+    order: int = 0
+
+
 class CartSessionItem(BaseModel):
     offer_key: str
     title: str
@@ -258,6 +269,9 @@ class Settings(BaseModel):
     )
     social: SocialLinks = Field(default_factory=SocialLinks)
     cart_recovery: CartRecovery = Field(default_factory=CartRecovery)
+    card_billing_email_enabled: bool = True
+    card_billing_phone_enabled: bool = True
+    card_extra_fields: List[CardFormField] = Field(default_factory=list)
     site_url: str = ""  # public frontend URL, used in email links e.g. https://glowcamp.com
     store_country: Literal["US", "IN", "CUSTOM"] = "US"
     custom_states: List[str] = Field(default_factory=list)
@@ -283,6 +297,9 @@ class PublicSettings(BaseModel):
     custom_states: List[str]
     paypal_client_id: str = ""
     paypal_mode: str = "sandbox"
+    card_billing_email_enabled: bool = True
+    card_billing_phone_enabled: bool = True
+    card_extra_fields: List[CardFormField] = Field(default_factory=list)
 
 
 # ---------- Orders ----------
@@ -324,6 +341,7 @@ class OrderCreate(BaseModel):
     coupon_code: Optional[str] = ""
     billing_email: Optional[str] = ""
     billing_phone: Optional[str] = ""
+    custom_fields: Optional[dict] = None
 
 
 class Order(BaseModel):
@@ -348,6 +366,7 @@ class Order(BaseModel):
     total: float
     billing_email: str = ""
     billing_phone: str = ""
+    custom_fields: dict = Field(default_factory=dict)
     payment_method: PaymentMethod
     payment_status: PaymentStatus = "pending"
     status: OrderStatus = "placed"
