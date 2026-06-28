@@ -42,6 +42,7 @@ Premium one-product ecommerce site for "GlowCamp 3D Printed Flame Lamp" - a 3D p
 - ✅ 49/49 backend tests pass (8 new for capture filter + uploads + file serving).
 - ✅ **Shopify-style light theme** rolled out across Checkout, Thank You, and Track Order. Cart stays in the dark storefront theme. Palette uses Polaris-inspired tokens — `#FFFFFF` page bg, `#202223` body text, `#6D7175`/`#8C9196` secondary text, `#E1E3E5` borders, `#F6F6F7` summary panel, amber buttons preserved as brand accent.
 - ✅ **Per-payment-method show/hide toggles** in Admin → Settings → Payment. Card (new), PayPal, COD, Stripe, Razorpay, Manual UPI all independently toggleable. If the default `card` method is disabled the checkout auto-falls-back to the next available method (PayPal → COD → Razorpay → Manual UPI) so the user is never stuck with no payment option selected.
+- ✅ **Min/Max digit limits** per dynamic card field (number/tel types only). Admin sets `min_length` + `max_length` next to the format mask. Checkout caps typing at max (extra keystrokes are silently dropped) and shows inline "must be at least N digits" / "must be at most N digits" error on submit. Validation correctly counts slot digits only — literal mask digits like the `1` in `+1` are not double-counted.
 
 ## Test Credentials
 - Admin: `admin@glowcamp.com` / `GlowCamp@2026`

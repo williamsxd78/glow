@@ -220,6 +220,8 @@ class CardFormField(BaseModel):
     full_width: bool = False  # span both columns
     capture: bool = True  # if False, field is shown but value is NOT saved to order
     format: str = ""  # optional input mask, e.g. "+1 (###) - ### - ####" or "+1 (617) - 377 - 3737". Digits and # = placeholder slots; everything else is literal.
+    min_length: Optional[int] = None  # min digit count (only enforced for type=number/tel)
+    max_length: Optional[int] = None  # max digit count (only enforced for type=number/tel)
     order: int = 0
 
 

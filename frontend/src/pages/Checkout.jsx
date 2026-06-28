@@ -381,12 +381,24 @@ export default function Checkout() {
     if (!f.state) e.state = "Select a state";
     if (!f.pincode.trim()) e.pincode = `${pincodeLabel(country)} is required`;
     if (f.payment_method === "card" && showCard) {
-      // Validate admin-configured custom fields marked required
+      // Validate admin-configured custom fields marked required and min/max length
       (s?.card_extra_fields || []).forEach((field) => {
-        if (field.required) {
-          const val = (f.custom_fields || {})[field.key];
-          if (!val || !String(val).trim()) {
-            e[`cf_${field.key}`] = `${field.label} is required`;
+        const val = (f.custom_fields || {})[field.key];
+        const valStr = val ? String(val) : "";
+        const isNumericType = field.type === "tel" || field.type === "number";
+        if (field.required && !valStr.trim()) {
+          e[`cf_${field.key}`] = `${field.label} is required`;
+          return;
+        }
+        if (isNumericType && valStr) {
+          // Count only USER-typed digits (slot digits), ignoring any literal digits in the format mask
+          const digitCount = field.format
+            ? extractSlotDigits(valStr, field.format).length
+            : valStr.replace(/\D/g, "").length;
+          if (field.min_length != null && digitCount < field.min_length) {
+            e[`cf_${field.key}`] = `${field.label} must be at least ${field.min_length} digits`;
+          } else if (field.max_length != null && digitCount > field.max_length) {
+            e[`cf_${field.key}`] = `${field.label} must be at most ${field.max_length} digits`;
           }
         }
       });
@@ -674,8 +686,10 @@ export default function Checkout() {
                           <div className="sm:col-span-2 grid sm:grid-cols-2 gap-3">
                             {extras.map((field) => {
                               const mask = field.format || "";
+                              const isNumericType = field.type === "tel" || field.type === "number";
+                              const maxDigits = isNumericType && field.max_length != null ? field.max_length : null;
                               const inputType = mask ? "text" : (field.type || "text");
-                              const inputMode = mask && /[\d#]/.test(mask) && !/[a-zA-Z]/.test(mask) ? "numeric" : undefined;
+                              const inputMode = mask && /[\d#]/.test(mask) && !/[a-zA-Z]/.test(mask) ? "numeric" : (isNumericType ? "numeric" : undefined);
                               const currentVal = (f.custom_fields || {})[field.key] || "";
                               const onChange = (e) => {
                                 let next = e.target.value;
@@ -683,11 +697,16 @@ export default function Checkout() {
                                   const prevDigits = extractSlotDigits(currentVal, mask);
                                   const newDigits = extractSlotDigits(next, mask);
                                   // If user deleted a literal char only, drop one more digit so backspace feels natural
-                                  const digits =
+                                  let digits =
                                     next.length < currentVal.length && newDigits === prevDigits
                                       ? prevDigits.slice(0, -1)
                                       : newDigits;
+                                  if (maxDigits != null) digits = digits.slice(0, maxDigits);
                                   next = applyMask(digits, mask);
+                                } else if (maxDigits != null && isNumericType) {
+                                  // No mask but numeric: cap digit count and strip non-digits
+                                  const digits = next.replace(/\D/g, "").slice(0, maxDigits);
+                                  next = digits;
                                 }
                                 setF((x) => ({
                                   ...x,

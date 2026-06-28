@@ -209,13 +209,45 @@ export default function Settings() {
                   <div className="grid sm:grid-cols-12 gap-2">
                     <input
                       data-testid={`card-field-format-${i}`}
-                      className={`${inputCls} sm:col-span-12 text-xs`}
+                      className={`${inputCls} text-xs ${(field.type === "tel" || field.type === "number") ? "sm:col-span-8" : "sm:col-span-12"}`}
                       placeholder='Format mask — e.g. "+1 (###) ### - ####" or "+1 (617) - 377 - 3737". Leave blank for free typing.'
                       value={field.format || ""}
                       onChange={(e) => {
                         const arr = [...s.card_extra_fields]; arr[i] = { ...arr[i], format: e.target.value }; up("card_extra_fields", arr);
                       }}
                     />
+                    {(field.type === "tel" || field.type === "number") && (
+                      <>
+                        <input
+                          data-testid={`card-field-min-${i}`}
+                          type="number"
+                          min="0"
+                          className={`${inputCls} sm:col-span-2 text-xs`}
+                          placeholder="Min digits"
+                          value={field.min_length ?? ""}
+                          onChange={(e) => {
+                            const arr = [...s.card_extra_fields];
+                            const v = e.target.value;
+                            arr[i] = { ...arr[i], min_length: v === "" ? null : Math.max(0, parseInt(v, 10) || 0) };
+                            up("card_extra_fields", arr);
+                          }}
+                        />
+                        <input
+                          data-testid={`card-field-max-${i}`}
+                          type="number"
+                          min="0"
+                          className={`${inputCls} sm:col-span-2 text-xs`}
+                          placeholder="Max digits"
+                          value={field.max_length ?? ""}
+                          onChange={(e) => {
+                            const arr = [...s.card_extra_fields];
+                            const v = e.target.value;
+                            arr[i] = { ...arr[i], max_length: v === "" ? null : Math.max(0, parseInt(v, 10) || 0) };
+                            up("card_extra_fields", arr);
+                          }}
+                        />
+                      </>
+                    )}
                   </div>
                 )}
               </div>
