@@ -41,6 +41,7 @@ Premium one-product ecommerce site for "GlowCamp 3D Printed Flame Lamp" - a 3D p
 - ✅ `resolveImageUrl()` helper added to `lib/api.js` and applied across Hero, Cart, Checkout, ThankYou, TrackOrder, Product, Gallery and StickyCart — uploaded relative paths (`/api/files/...`) now resolve to absolute backend URLs at render time; existing absolute URLs continue to work.
 - ✅ 49/49 backend tests pass (8 new for capture filter + uploads + file serving).
 - ✅ **Shopify-style light theme** rolled out across Checkout, Thank You, and Track Order. Cart stays in the dark storefront theme. Palette uses Polaris-inspired tokens — `#FFFFFF` page bg, `#202223` body text, `#6D7175`/`#8C9196` secondary text, `#E1E3E5` borders, `#F6F6F7` summary panel, amber buttons preserved as brand accent.
+- ✅ **Per-payment-method show/hide toggles** in Admin → Settings → Payment. Card (new), PayPal, COD, Stripe, Razorpay, Manual UPI all independently toggleable. If the default `card` method is disabled the checkout auto-falls-back to the next available method (PayPal → COD → Razorpay → Manual UPI) so the user is never stuck with no payment option selected.
 
 ## Test Credentials
 - Admin: `admin@glowcamp.com` / `GlowCamp@2026`

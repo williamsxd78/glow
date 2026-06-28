@@ -333,6 +333,22 @@ export default function Checkout() {
     return () => clearTimeout(tid);
   }, [f.email, f.full_name, items, subtotal]);
 
+  // If the default payment_method (`card`) is disabled by the admin, fall back
+  // to the first available method so the user can still check out.
+  const _pm = s?.payment_options || {};
+  const _showCard = _pm.card !== false;
+  const _showPaypal = _pm.paypal;
+  const _showCod = _pm.cod;
+  const _showRazorpay = _pm.razorpay;
+  const _showManualUpi = _pm.manual_upi;
+  useEffect(() => {
+    if (!s) return;
+    if (f.payment_method === "card" && !_showCard) {
+      const fallback = _showPaypal ? "paypal" : _showCod ? "cod" : _showRazorpay ? "razorpay" : _showManualUpi ? "manual_upi" : "";
+      if (fallback) setF((x) => ({ ...x, payment_method: fallback }));
+    }
+  }, [s, _showCard, _showPaypal, _showCod, _showRazorpay, _showManualUpi, f.payment_method]);
+
   if (items.length === 0 && !createdOrder && !processing) {
     return (
       <div className="min-h-screen bg-white text-[#202223]">
@@ -364,7 +380,7 @@ export default function Checkout() {
     if (!f.city.trim()) e.city = "City is required";
     if (!f.state) e.state = "Select a state";
     if (!f.pincode.trim()) e.pincode = `${pincodeLabel(country)} is required`;
-    if (f.payment_method === "card") {
+    if (f.payment_method === "card" && showCard) {
       // Validate admin-configured custom fields marked required
       (s?.card_extra_fields || []).forEach((field) => {
         if (field.required) {
@@ -471,6 +487,7 @@ export default function Checkout() {
   }
 
   const pm = s?.payment_options || {};
+  const showCard = pm.card !== false; // default-on to preserve backward compat
   const showPaypal = pm.paypal;
   const showCod = pm.cod;
   const showRazorpay = pm.razorpay;
@@ -616,6 +633,7 @@ export default function Checkout() {
             <Section title="Payment" subtitle="All transactions are secure and encrypted">
               <div className="space-y-2.5">
                 {/* Card */}
+                {showCard && (
                 <PaymentRow
                   active={f.payment_method === "card"}
                   icon={CreditCard}
@@ -699,6 +717,7 @@ export default function Checkout() {
                     );
                   })()}
                 </PaymentRow>
+                )}
 
                 {/* PayPal */}
                 {showPaypal && (

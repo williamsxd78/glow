@@ -155,6 +155,7 @@ def public_view(s: Settings) -> PublicSettings:
         whatsapp_message=s.whatsapp_message,
         social=s.social,
         payment_options={
+            "card": s.payment.card_enabled,
             "paypal": s.payment.paypal_enabled,
             "stripe": s.payment.stripe_enabled,
             "razorpay": s.payment.razorpay_enabled,

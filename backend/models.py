@@ -45,6 +45,7 @@ class Offer(BaseModel):
 
 
 class PaymentSettings(BaseModel):
+    card_enabled: bool = True  # generic card section (dynamic admin-built form)
     stripe_enabled: bool = False
     stripe_key: str = ""
     paypal_enabled: bool = True

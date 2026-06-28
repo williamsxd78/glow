@@ -136,6 +136,7 @@ export default function Settings() {
       </Section>
 
       <Section title="Payment Gateways">
+        <Field label="Credit / Debit Card"><Toggle checked={s.payment.card_enabled !== false} onChange={(v) => up("payment.card_enabled", v)} label="Show on checkout" /></Field>
         <Field label="PayPal"><Toggle checked={s.payment.paypal_enabled} onChange={(v) => up("payment.paypal_enabled", v)} label="Enable PayPal" /></Field>
         <Field label="PayPal Mode">
           <select className={inputCls} value={s.payment.paypal_mode} onChange={(e) => up("payment.paypal_mode", e.target.value)}>
