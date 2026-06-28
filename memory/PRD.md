@@ -40,6 +40,7 @@ Premium one-product ecommerce site for "GlowCamp 3D Printed Flame Lamp" - a 3D p
 - ✅ New reusable React `<ImageUpload />` component with preview thumbnail, URL input (backward compat for external links), and Upload button. Wired into Admin → Gallery and Admin → Product (Main Image).
 - ✅ `resolveImageUrl()` helper added to `lib/api.js` and applied across Hero, Cart, Checkout, ThankYou, TrackOrder, Product, Gallery and StickyCart — uploaded relative paths (`/api/files/...`) now resolve to absolute backend URLs at render time; existing absolute URLs continue to work.
 - ✅ 49/49 backend tests pass (8 new for capture filter + uploads + file serving).
+- ✅ **Shopify-style light theme** rolled out across Checkout, Thank You, and Track Order. Cart stays in the dark storefront theme. Palette uses Polaris-inspired tokens — `#FFFFFF` page bg, `#202223` body text, `#6D7175`/`#8C9196` secondary text, `#E1E3E5` borders, `#F6F6F7` summary panel, amber buttons preserved as brand accent.
 
 ## Test Credentials
 - Admin: `admin@glowcamp.com` / `GlowCamp@2026`
