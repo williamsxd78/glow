@@ -770,7 +770,7 @@ export default function Checkout() {
                     data-testid="pm-paypal"
                   >
                     {!createdOrder ? (
-                      <button type="button" onClick={startPaypal} disabled={busy} className="w-full h-12 rounded-lg bg-[#FFC439] hover:bg-[#F2BA36] text-[#202223] font-semibold flex items-center justify-center gap-2 transition disabled:opacity-60">
+                      <button type="button" onClick={startPaypal} disabled={busy} className="w-full h-12 rounded-lg bg-[#FFC439] hover:bg-[#F1B82E] text-[#003087] font-semibold flex items-center justify-center gap-2 transition disabled:opacity-60">
                         {busy ? "Preparing PayPal..." : "Continue with PayPal"}
                       </button>
                     ) : (
