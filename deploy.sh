@@ -241,7 +241,7 @@ echo
 echo "  Storefront:    https://$DOMAIN"
 echo "  Admin panel:   https://$DOMAIN/admin/login"
 echo "    email:       admin@glowcamp.com"
-echo "    password:    GlowCamp@2026   ${RED}← change this immediately${NC}"
+echo "    password:    GlowCamp@2026   ← change this immediately"
 echo
 echo "  Logs:          pm2 logs glowcamp-backend"
 echo "  Restart back:  pm2 restart glowcamp-backend"
