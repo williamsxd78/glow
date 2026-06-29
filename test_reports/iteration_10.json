@@ -1,0 +1,32 @@
+{
+  "summary": "Iteration 10 — Checkout layout polish verification at 412x1200 (mobile). Verified (1) all FloatInput/FloatSelect heights are 48px (h-12), (2) Delivery field order is country -> full_name -> address -> apartment -> city/state/pincode (row) -> phone -> landmark — phone is NOT next to full_name, (3) 'Secure Checkout' h2 renders on ONE line (height 28px == lineHeight 28px, ratio 1.0) with a small gray <p> subtitle below, (4) 'Credit / Debit Card' title renders on ONE line (titleHeight 20px == lineHeight 20px, not wrapped) with VISA/MC/AMEX/+more brand badges sitting on the SAME row to its right (titleTop == brandsTop == 1442.5, sameRow=true). Functional regression: COD order submit POST /api/orders -> 200 with order_number GC-E027B676; PaymentProcessing overlay shown. Backend regression test_iteration5.py: 10/10 PASSED. Pre-existing card_extra_fields render container intact (no extras configured in current settings, so cf-* selectors empty by design; billing_email + billing_phone fields visible inside Card row).",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iteration5.py",
+    "/app/test_reports/pytest/iter10_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Minor (pre-existing, not part of this iteration): image src='' warning in React console — 'An empty string passed to the src attribute'. Likely from resolveImageUrl returning '' for cart item when product.main_image is undefined. Not blocking but should pass null instead.",
+    "Checkout.jsx is now ~850 lines and could be split (FloatInput/FloatSelect/Section/CardBrandBadges/PaymentRow/OrderSummary into separate files) for maintainability, but not blocking."
+  ],
+  "updated_files": [],
+  "success_rate": { "backend": "100%", "frontend": "100%" },
+  "test_credentials": "admin@glowcamp.com / GlowCamp@2026 (not exercised in this iteration; pure UI/regression).",
+  "seed_data_creation": "localStorage glowcamp_cart_v1 seeded with [{offer_key:'single', title:'Single GlowCamp Lamp', quantity:1, unit_price:29.99}] to land on /checkout with items. One COD order created: GC-E027B676 (TEST_iter10b@example.com).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Checkout submit button data-testid is 'checkout-submit-btn' (from TID.checkoutSubmit). Inputs are id-based selectors: #email #full_name #phone #address #apartment #city #state #pincode #landmark #billing_email #billing_phone. Payment tiles: data-testid='pm-card' / 'pm-paypal' / 'pm-cod'. To reach /checkout with items, seed localStorage glowcamp_cart_v1 first.",
+  "measurements_412px": {
+    "input_heights_px": {"email":48,"full_name":48,"address":48,"apartment":48,"city":48,"state":48,"pincode":48,"phone":48,"landmark":48,"country":48},
+    "delivery_field_dom_order": ["country","full_name","address","apartment","city","state","pincode","phone","landmark"],
+    "secure_checkout_header": {"height":28,"lineHeight":28,"ratio":1.0,"subtitle":"P tag, color rgb(109,113,117)"},
+    "card_row": {"titleHeight":20,"titleLineHeight":20,"titleWrapped":false,"brandsSameRow":true},
+    "order_post_status": 200
+  }
+}

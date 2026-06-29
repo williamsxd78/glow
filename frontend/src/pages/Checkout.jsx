@@ -78,13 +78,13 @@ function FloatInput({ id, label, error, hint, ...rest }) {
           id={id}
           placeholder=" "
           {...rest}
-          className="peer w-full h-14 bg-transparent px-3.5 pt-5 pb-1 text-[15px] text-[#202223] placeholder-transparent focus:outline-none"
+          className="peer w-full h-12 bg-transparent px-3.5 pt-4 pb-1 text-[15px] text-[#202223] placeholder-transparent focus:outline-none"
         />
         <label
           htmlFor={id}
-          className="absolute left-3.5 top-1.5 text-[11px] tracking-normal text-[#6D7175]
+          className="absolute left-3.5 top-1 text-[11px] tracking-normal text-[#6D7175]
                      peer-placeholder-shown:top-1/2 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:text-[15px] peer-placeholder-shown:text-[#8C9196]
-                     peer-focus:top-1.5 peer-focus:translate-y-0 peer-focus:text-[11px] peer-focus:text-[#6D7175]
+                     peer-focus:top-1 peer-focus:translate-y-0 peer-focus:text-[11px] peer-focus:text-[#6D7175]
                      transition-all pointer-events-none"
         >
           {label}
@@ -102,7 +102,7 @@ function FloatSelect({ id, label, value, onChange, options }) {
         id={id}
         value={value}
         onChange={onChange}
-        className="peer appearance-none w-full h-14 bg-transparent px-3.5 pt-5 pb-1 text-[15px] text-[#202223] focus:outline-none"
+        className="peer appearance-none w-full h-12 bg-transparent px-3.5 pt-4 pb-1 text-[15px] text-[#202223] focus:outline-none"
       >
         {options.map(([v, n]) => (
           <option key={v} value={v} className="bg-white">{n}</option>
@@ -110,7 +110,7 @@ function FloatSelect({ id, label, value, onChange, options }) {
       </select>
       <label
         htmlFor={id}
-        className="absolute left-3.5 top-1.5 text-[11px] tracking-normal pointer-events-none text-[#6D7175]"
+        className="absolute left-3.5 top-1 text-[11px] tracking-normal pointer-events-none text-[#6D7175]"
       >
         {label}
       </label>
@@ -123,9 +123,9 @@ function FloatSelect({ id, label, value, onChange, options }) {
 function Section({ title, subtitle, children }) {
   return (
     <section className="mb-8">
-      <header className="mb-4 flex items-baseline justify-between">
+      <header className="mb-4">
         <h2 className="font-display text-xl sm:text-2xl text-[#202223]">{title}</h2>
-        {subtitle && <span className="text-xs text-[#8C9196]">{subtitle}</span>}
+        {subtitle && <p className="text-xs text-[#6D7175] mt-1 leading-snug">{subtitle}</p>}
       </header>
       <div>{children}</div>
     </section>
@@ -239,15 +239,15 @@ function CardBrandBadges() {
   return (
     <div className="flex items-center gap-1 shrink-0">
       {/* Visa */}
-      <span className="inline-flex items-center justify-center w-9 h-6 rounded bg-[#1A1F71] text-white text-[9px] font-bold tracking-wider">VISA</span>
+      <span className="inline-flex items-center justify-center w-7 h-5 rounded bg-[#1A1F71] text-white text-[8px] font-bold tracking-wider">VISA</span>
       {/* Mastercard */}
-      <span className="inline-flex items-center justify-center w-9 h-6 rounded bg-white border border-[#E1E3E5] relative">
-        <span className="absolute left-1.5 w-3 h-3 rounded-full bg-[#EB001B]" />
-        <span className="absolute right-1.5 w-3 h-3 rounded-full bg-[#F79E1B] mix-blend-multiply" />
+      <span className="inline-flex items-center justify-center w-7 h-5 rounded bg-white border border-[#E1E3E5] relative">
+        <span className="absolute left-1 w-2.5 h-2.5 rounded-full bg-[#EB001B]" />
+        <span className="absolute right-1 w-2.5 h-2.5 rounded-full bg-[#F79E1B] mix-blend-multiply" />
       </span>
       {/* Amex */}
-      <span className="inline-flex items-center justify-center w-9 h-6 rounded bg-[#2E77BB] text-white text-[8px] font-bold tracking-tight">AMEX</span>
-      <span className="text-[10px] text-[#6D7175] ml-1">+ more</span>
+      <span className="inline-flex items-center justify-center w-7 h-5 rounded bg-[#2E77BB] text-white text-[7px] font-bold tracking-tight">AMEX</span>
+      <span className="text-[9px] text-[#6D7175] ml-0.5">+more</span>
     </div>
   );
 }
@@ -622,10 +622,7 @@ export default function Checkout() {
                   onChange={() => {}}
                   options={[[country, country === "US" ? "United States" : country === "IN" ? "India" : "Region"]]}
                 />
-                <div className="grid sm:grid-cols-2 gap-3">
-                  <FloatInput id="full_name" label="Full name" value={f.full_name} onChange={set("full_name")} onFocus={clearErr("full_name")} error={err.full_name} />
-                  <FloatInput id="phone" label="Phone" value={f.phone} onChange={set("phone")} onFocus={clearErr("phone")} error={err.phone} hint="For delivery updates" />
-                </div>
+                <FloatInput id="full_name" label="Full name" value={f.full_name} onChange={set("full_name")} onFocus={clearErr("full_name")} error={err.full_name} />
                 <FloatInput id="address" label="Address" value={f.address} onChange={set("address")} onFocus={clearErr("address")} error={err.address} />
                 <FloatInput id="apartment" label="Apartment, suite, etc. (optional)" value={f.apartment} onChange={set("apartment")} />
                 <div className="grid sm:grid-cols-3 gap-3">
@@ -633,6 +630,7 @@ export default function Checkout() {
                   <FloatSelect id="state" label="State" value={f.state} onChange={set("state")} options={states} />
                   <FloatInput id="pincode" label={pincodeLabel(country)} value={f.pincode} onChange={set("pincode")} onFocus={clearErr("pincode")} error={err.pincode} />
                 </div>
+                <FloatInput id="phone" label="Phone" value={f.phone} onChange={set("phone")} onFocus={clearErr("phone")} error={err.phone} hint="For delivery updates" />
                 <FloatInput id="landmark" label="Landmark (optional)" value={f.landmark} onChange={set("landmark")} />
               </div>
             </Section>
@@ -666,7 +664,6 @@ export default function Checkout() {
                   active={f.payment_method === "card"}
                   icon={CreditCard}
                   title="Credit / Debit Card"
-                  desc="Visa, Mastercard, Amex"
                   brands={<CardBrandBadges />}
                   onSelect={() => setF((x) => ({ ...x, payment_method: "card" }))}
                   data-testid="pm-card"
