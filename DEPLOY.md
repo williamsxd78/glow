@@ -24,10 +24,14 @@ Click the **Deploy** button in the Emergent chat UI. Pick a subdomain. Done in 2
 # 1. SSH into your VPS
 ssh root@YOUR_SERVER_IP
 
-# 2. Clone your repo (push to GitHub first via Emergent's "Save to Github" button)
-cd /var/www
-git clone https://github.com/YOUR_USERNAME/glowcamp.git
-cd glowcamp
+# 2. Create the install directory and clone your repo
+#    IMPORTANT: use the .git URL, NOT the browser URL.
+#    Browser URL:  https://github.com/you/glow/tree/main      ← won't work
+#    Clone URL:    https://github.com/you/glow.git            ← use this
+#    Get it from your repo page → green "<> Code" button.
+sudo mkdir -p /var/www && cd /var/www
+sudo git clone https://github.com/YOUR_USERNAME/YOUR_REPO.git
+cd YOUR_REPO          # folder name = your repo name (e.g. `glow`, `glowcamp`, etc.)
 
 # 3. Run the deploy script
 sudo bash deploy.sh
