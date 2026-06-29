@@ -237,34 +237,53 @@ function OrderSummary({ items, s, subtotal, discount, shipping, total, coupon, c
   );
 }
 
-/* ============================== Payment Tile ============================== */
-function PaymentRow({ active, icon: Icon, title, desc, badge, onSelect, children, "data-testid": testId }) {
+/* ============================== Card-brand badges (Shopify-style trust signals) ============================== */
+function CardBrandBadges() {
+  return (
+    <div className="flex items-center gap-1 shrink-0">
+      {/* Visa */}
+      <span className="inline-flex items-center justify-center w-9 h-6 rounded bg-[#1A1F71] text-white text-[9px] font-bold tracking-wider">VISA</span>
+      {/* Mastercard */}
+      <span className="inline-flex items-center justify-center w-9 h-6 rounded bg-white border border-[#E1E3E5] relative">
+        <span className="absolute left-1.5 w-3 h-3 rounded-full bg-[#EB001B]" />
+        <span className="absolute right-1.5 w-3 h-3 rounded-full bg-[#F79E1B] mix-blend-multiply" />
+      </span>
+      {/* Amex */}
+      <span className="inline-flex items-center justify-center w-9 h-6 rounded bg-[#2E77BB] text-white text-[8px] font-bold tracking-tight">AMEX</span>
+      <span className="text-[10px] text-[#6D7175] ml-1">+ more</span>
+    </div>
+  );
+}
+
+/* ============================== Payment Tile (Shopify-neutral) ============================== */
+function PaymentRow({ active, icon: Icon, title, desc, badge, brands, onSelect, children, "data-testid": testId }) {
   return (
     <div
-      className={`rounded-xl border transition-all overflow-hidden ${
-        active ? "border-amber-500 bg-amber-50" : "border-[#E1E3E5] bg-white"
+      className={`rounded-xl border-2 transition-all overflow-hidden bg-white ${
+        active ? "border-[#202223]" : "border-[#E1E3E5]"
       }`}
     >
       <button
         type="button"
         onClick={onSelect}
         data-testid={testId}
-        className="w-full text-left p-4 flex items-center gap-3"
+        className="w-full text-left px-4 py-3.5 flex items-center gap-3"
       >
-        <div className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 ${active ? "border-amber-500" : "border-[#E1E3E5]"}`}>
-          {active && <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />}
+        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${active ? "border-[#202223]" : "border-[#C9CCCF]"}`}>
+          {active && <span className="w-2.5 h-2.5 rounded-full bg-[#202223]" />}
         </div>
-        <Icon size={18} className={active ? "text-amber-500" : "text-[#6D7175]"} />
+        <Icon size={18} className="text-[#6D7175]" />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-sm text-[#202223] font-medium">{title}</span>
-            {badge && <span className="text-[10px] uppercase tracking-widest bg-amber-50 text-amber-500 px-1.5 py-0.5 rounded">{badge}</span>}
+            {badge && <span className="text-[10px] uppercase tracking-widest bg-[#F6F6F7] text-[#6D7175] px-1.5 py-0.5 rounded">{badge}</span>}
           </div>
           {desc && <div className="text-xs text-[#8C9196] mt-0.5">{desc}</div>}
         </div>
+        {brands}
       </button>
       {active && children && (
-        <div className="border-t border-[#E1E3E5] p-4 bg-white">
+        <div className="border-t border-[#E1E3E5] p-4 bg-[#FAFBFB]">
           {children}
         </div>
       )}
@@ -623,17 +642,17 @@ export default function Checkout() {
 
             {/* SHIPPING METHOD */}
             <Section title="Shipping method">
-              <div className="rounded-xl border border-amber-500 bg-amber-50 p-4 flex items-center gap-3">
-                <div className="w-5 h-5 rounded-full border border-amber-500 flex items-center justify-center shrink-0">
-                  <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
+              <div className="rounded-xl border-2 border-[#202223] bg-white p-4 flex items-center gap-3">
+                <div className="w-5 h-5 rounded-full border-2 border-[#202223] flex items-center justify-center shrink-0">
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#202223]" />
                 </div>
-                <Truck size={18} className="text-amber-500" />
+                <Truck size={18} className="text-[#6D7175]" />
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-medium">Standard Delivery</div>
                   <div className="text-xs text-[#8C9196]">4–7 business days</div>
                 </div>
                 <div className="text-sm font-medium">
-                  {shipping === 0 ? <span className="text-amber-500">FREE</span> : `$${shipping.toFixed(2)}`}
+                  {shipping === 0 ? <span className="text-emerald-600">FREE</span> : `$${shipping.toFixed(2)}`}
                 </div>
               </div>
               {discounted < freeShipThreshold && discounted > 0 && (
@@ -642,7 +661,7 @@ export default function Checkout() {
             </Section>
 
             {/* PAYMENT */}
-            <Section title="Payment" subtitle="All transactions are secure and encrypted">
+            <Section title="Secure Checkout" subtitle="All transactions are secure and encrypted. Your order includes free returns and 24/7 access to our award-winning customer service.">
               <div className="space-y-2.5">
                 {/* Card */}
                 {showCard && (
@@ -651,6 +670,7 @@ export default function Checkout() {
                   icon={CreditCard}
                   title="Credit / Debit Card"
                   desc="Visa, Mastercard, Amex"
+                  brands={<CardBrandBadges />}
                   onSelect={() => setF((x) => ({ ...x, payment_method: "card" }))}
                   data-testid="pm-card"
                 >
@@ -750,7 +770,7 @@ export default function Checkout() {
                     data-testid="pm-paypal"
                   >
                     {!createdOrder ? (
-                      <button type="button" onClick={startPaypal} disabled={busy} className="btn-primary w-full justify-center">
+                      <button type="button" onClick={startPaypal} disabled={busy} className="w-full h-12 rounded-lg bg-[#FFC439] hover:bg-[#F2BA36] text-[#202223] font-semibold flex items-center justify-center gap-2 transition disabled:opacity-60">
                         {busy ? "Preparing PayPal..." : "Continue with PayPal"}
                       </button>
                     ) : (
@@ -802,7 +822,7 @@ export default function Checkout() {
                   type="submit"
                   disabled={busy}
                   data-testid={TID.checkoutSubmit}
-                  className="w-full h-14 rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-semibold text-base flex items-center justify-center gap-2 transition disabled:opacity-60"
+                  className="w-full h-14 rounded-lg bg-[#202223] hover:bg-black text-white font-semibold text-base flex items-center justify-center gap-2 transition disabled:opacity-60"
                 >
                   <Lock size={16} /> {busy ? "Placing order..." : `Pay now · $${total.toFixed(2)}`}
                 </button>
