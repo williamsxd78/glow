@@ -71,7 +71,7 @@ function FloatInput({ id, label, error, hint, ...rest }) {
     <div className="w-full">
       <div
         className={`relative bg-white border rounded-lg transition-all ${
-          error ? "border-red-500/70" : "border-[#8C9196] focus-within:border-amber-500"
+          error ? "border-red-500/70" : "border-[#8C9196] focus-within:border-[#202223] focus-within:ring-1 focus-within:ring-[#202223]"
         }`}
       >
         <input
@@ -82,23 +82,22 @@ function FloatInput({ id, label, error, hint, ...rest }) {
         />
         <label
           htmlFor={id}
-          className="absolute left-3.5 top-1.5 text-[10px] uppercase tracking-widest text-[#8C9196]
-                     peer-placeholder-shown:top-1/2 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:text-sm peer-placeholder-shown:normal-case peer-placeholder-shown:tracking-normal peer-placeholder-shown:text-[#8C9196]
-                     peer-focus:top-1.5 peer-focus:translate-y-0 peer-focus:text-[10px] peer-focus:uppercase peer-focus:tracking-widest peer-focus:text-amber-500
+          className="absolute left-3.5 top-1.5 text-[11px] tracking-normal text-[#6D7175]
+                     peer-placeholder-shown:top-1/2 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:text-[15px] peer-placeholder-shown:text-[#8C9196]
+                     peer-focus:top-1.5 peer-focus:translate-y-0 peer-focus:text-[11px] peer-focus:text-[#6D7175]
                      transition-all pointer-events-none"
         >
           {label}
         </label>
       </div>
-      {error ? <p className="text-xs text-red-400 mt-1.5 px-1">{error}</p> : hint ? <p className="text-[11px] text-[#8C9196] mt-1.5 px-1">{hint}</p> : null}
+      {error ? <p className="text-xs text-red-500 mt-1.5 px-1">{error}</p> : hint ? <p className="text-[11px] text-[#8C9196] mt-1.5 px-1">{hint}</p> : null}
     </div>
   );
 }
 
 function FloatSelect({ id, label, value, onChange, options }) {
-  const hasValue = !!value;
   return (
-    <div className="relative bg-white border border-[#8C9196] rounded-lg focus-within:border-amber-500 transition-all">
+    <div className="relative bg-white border border-[#8C9196] rounded-lg focus-within:border-[#202223] focus-within:ring-1 focus-within:ring-[#202223] transition-all">
       <select
         id={id}
         value={value}
@@ -111,9 +110,7 @@ function FloatSelect({ id, label, value, onChange, options }) {
       </select>
       <label
         htmlFor={id}
-        className={`absolute left-3.5 top-1.5 text-[10px] uppercase tracking-widest pointer-events-none transition-all ${
-          hasValue ? "text-amber-500" : "text-[#8C9196]"
-        }`}
+        className="absolute left-3.5 top-1.5 text-[11px] tracking-normal pointer-events-none text-[#6D7175]"
       >
         {label}
       </label>
@@ -540,7 +537,7 @@ export default function Checkout() {
           onClick={() => setOpenSummary((x) => !x)}
           className="w-full px-4 py-3 flex items-center justify-between"
         >
-          <span className="text-sm text-amber-500 flex items-center gap-2">
+          <span className="text-sm text-[#202223] flex items-center gap-2">
             {openSummary ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
             {openSummary ? "Hide order summary" : "Show order summary"}
           </span>
@@ -691,7 +688,7 @@ export default function Checkout() {
                       <div className="grid sm:grid-cols-2 gap-3">
                         {(showBillingEmail || showBillingPhone) && (
                           <div className="sm:col-span-2">
-                            <p className="text-[10px] uppercase tracking-widest text-amber-500 mb-3">Billing contact (for receipt)</p>
+                            <p className="text-xs text-[#6D7175] font-medium mb-3">Billing contact (for receipt)</p>
                             <div className="grid sm:grid-cols-2 gap-3">
                               {showBillingEmail && (
                                 <FloatInput id="billing_email" label="Billing email" type="email" value={f.billing_email} onChange={set("billing_email")} hint="Receipt will be sent here" />

@@ -1,0 +1,52 @@
+{
+  "summary": "Iteration 9 — Verified amber-to-neutral label refactor on /checkout. Backend regression (test_iteration5.py) 10/10 PASS. Frontend Playwright at 420x1100 (mobile) confirms every label/border the user complained about is now neutral Shopify gray with ZERO amber-500 text remaining on the checkout form.",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": { "ui_bugs": [], "integration_issues": [], "design_issues": [] },
+  "verification_details": {
+    "section_headings": {
+      "Contact / Delivery / Shipping method / Secure Checkout": "color rgb(32,34,35) (#202223) — dark, NOT amber"
+    },
+    "float_labels": {
+      "Country/Region & State (floated state)": "color rgb(109,113,117) (#6D7175), text-transform=none, letter-spacing=normal, font-size=11px",
+      "Email/Full name/Phone/Address/City/etc (placeholder state)": "color rgb(140,145,150) (#8C9196), text-transform=none, font-size=15px",
+      "amber-500 uppercase tracking-widest": "NOT PRESENT on any label"
+    },
+    "focused_input_border": {
+      "borderColor": "rgb(32,34,35) (#202223)",
+      "boxShadow": "1px ring of rgb(32,34,35)",
+      "amber border on focus": "NOT PRESENT"
+    },
+    "show_order_summary_bar": {
+      "color": "rgb(32,34,35) — dark, NOT amber"
+    },
+    "billing_contact_sublabel": {
+      "text": "Billing contact (for receipt)",
+      "color": "rgb(109,113,117) (#6D7175)",
+      "text-transform": "none (NOT uppercase, NOT amber)"
+    },
+    "amber_500_scan_on_checkout": "0 elements with rgb(245,158,11) text color across all <label>, <p>, <span>, <h1>, <h2>, <h3>"
+  },
+  "backend_regression": {
+    "command": "pytest backend/tests/test_iteration5.py with REACT_APP_BACKEND_URL=https://flame-glow-demo.preview.emergentagent.com",
+    "result": "10 passed in 1.47s — TestSettings (4), TestAdminLogin (1), TestFrontendSmoke (3), TestOrdersRegression (1 — POST /api/orders single+cod returned 200/201), TestMainImageReachable (1)"
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iteration5.py",
+    "/app/test_reports/pytest/iter9_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "FloatInput refactor is exactly Shopify-spec: placeholder label uses #8C9196 at 15px, floated label uses #6D7175 at 11px with tracking-normal — matches Shopify's checkout.shopify.com floating-label pattern verbatim.",
+    "focus-within:ring-1 + focus-within:border-[#202223] together create the subtle 1px dark ring users expect; no amber bleed anywhere.",
+    "Minor nit (carry-over from iter 8, NOT introduced by this refactor): the coupon input on line 203 still has `focus:border-amber-500` and the legacy 'Have an account?', 'Refund policy' etc. footer links retain `hover:text-amber-500`. These are intentional brand accents (link hover + coupon code = brand color is fine and matches Shopify's own discount-code field which uses the merchant accent on focus). Not flagging as a bug.",
+    "Pre-existing: Checkout.jsx is now ~855 lines — could be split (FloatInput/FloatSelect → /components/forms/FloatField.jsx; PaymentRow → /components/checkout/PaymentRow.jsx). Not blocking."
+  ],
+  "updated_files": [],
+  "success_rate": { "backend": "100% (10/10)", "frontend": "100% (5/5 visual checks)" },
+  "test_credentials": "admin@glowcamp.com / GlowCamp@2026 — validated via test_iteration5.py admin login",
+  "seed_data_creation": "Cart pre-seeded via localStorage `glowcamp_cart_v1` = [{offer_key:'single', title:'Single GlowCamp Lamp', quantity:1, unit_price:29.99}]. One TEST_ prefixed cod order created by test_iteration5 regression (full_name='TEST_Smoke Buyer').",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Checkout form labels are now fully Shopify-neutral. Canonical regression: pytest /app/backend/tests/test_iteration5.py (requires REACT_APP_BACKEND_URL env var to be exported — preview pod does not pre-export it for the pytest runner; just do `export REACT_APP_BACKEND_URL=$(grep REACT_APP_BACKEND_URL /app/frontend/.env | cut -d= -f2)` first). For mobile visual checks use viewport 420x1100, seed localStorage glowcamp_cart_v1, then assert (a) no rgb(245,158,11) text on /checkout form, (b) FloatInput labels are rgb(109,113,117) when floated and (c) focused border is rgb(32,34,35).",
+  "rca of the issue": "Not a bug — pure CSS-class refactor confirmed working. The user's complaint that amber-500 uppercase tracking-widest labels made the form look phishy is fully resolved: every floating label, the 'Show order summary' bar, the 'Billing contact (for receipt)' sub-label, and the focused-input border are now neutral Shopify gray (#6D7175 / #8C9196 / #202223). Backend untouched and still 10/10 green."
+}
