@@ -1,0 +1,55 @@
+{
+  "summary": "Iteration 11 — Live + historical analytics. Backend POST /api/track + GET /api/admin/analytics fully verified (19/19 pytest pass, includes 10 regression from iter5). Frontend wiring verified: route changes on /, /product, /checkout fire POST /api/track (sendBeacon), /admin/login is excluded, Dashboard renders Live Traffic widgets + Top Pages list + Orders/Inventory regression block, and polls /api/admin/analytics every ~5s (3 calls observed in 6.5s window). ONE data-testid required by the review request is missing — see frontend_issues.",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "admin/Dashboard.jsx — Visitors today card",
+        "issue": "Required data-testid 'live-visitors-today' is NOT present on the dashboard. The four Visitors / Active-sessions tiles (lines 91-94) use the generic <Card> component, which does not render any data-testid. Only the four <LiveCard> tiles above them (Active now / On product page / On cart / On checkout) emit data-testid={slug(label)}. The review request explicitly asks for live-visitors-today.",
+        "selector": "[data-testid=\"live-visitors-today\"]",
+        "priority": "HIGH"
+      }
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iteration11_analytics.py",
+    "/app/backend/tests/test_iteration5.py",
+    "/app/test_reports/pytest/iter11_results.xml"
+  ],
+  "action_items": [
+    "Add data-testid='live-visitors-today' to the 'Visitors today' card in /app/frontend/src/pages/admin/Dashboard.jsx. Simplest fix: add an optional `testId` prop to <Card> (or wrap the number in a <span data-testid={testId}>{value}</span>) and pass testId='live-visitors-today' for that tile. Optional consistency: also add live-visitors-7d, live-visitors-30d, live-active-sessions, live-page-views-today for future automation."
+  ],
+  "critical_code_review_comments": [
+    "Dashboard.jsx LiveCard generates data-testid by slugifying the label (label.toLowerCase().replace(/\\s+/g, '-')). This is fragile — renaming a label silently breaks tests. Prefer explicit testId prop.",
+    "/api/track is fully public with no rate-limit or origin check. A malicious actor can inflate visitor counts trivially. Consider basic protections: same-origin Referer check, per-IP rate cap, or HMAC token. Acceptable for MVP but worth a follow-up.",
+    "_normalize_path collapses trailing slashes but does NOT lowercase — /Product and /product would count separately. Likely fine for this app since routes are lowercase, but worth a comment.",
+    "page_views document writes datetime.now(timezone.utc) as a native datetime (good for TTL), but admin_analytics aggregates by raw $session_id — high-cardinality sessions over 30d could be heavy; add an index on ts+session_id if traffic grows. TTL index on ts already exists.",
+    "Dashboard.jsx polls every 5s and never stops on tab-hidden — minor wasted bandwidth. Could pause via document.visibilityState as analytics.js already does for heartbeats.",
+    "Pre-existing (not iter-11): empty-string src warning still printed on Checkout (resolveImageUrl returns '' for missing main_image)."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iteration11_analytics.py (new)"
+  ],
+  "success_rate": { "backend": "100%", "frontend": "80%" },
+  "test_credentials": "admin@glowcamp.com / GlowCamp@2026 (used).",
+  "seed_data_creation": "Tests inserted ~6-9 page_views rows with TEST_iter11_* session ids across /product, /checkout, plus a normalization probe (sess TEST_iter11_norm_*). live_sessions collection upserted accordingly. All TTL-bound (30d page_views, 24h live_sessions) so will self-purge.",
+  "retest_needed": true,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Backend file: /app/backend/tests/test_iteration11_analytics.py covers track + normalization + auth + analytics shape/counts + dashboard regression. Run with REACT_APP_BACKEND_URL exported. Frontend dashboard data-testids confirmed present: live-active-now, live-on-product-page, live-on-cart, live-on-checkout. MISSING: live-visitors-today (and the other three Visitors cards have no testid either). To repro: log in as admin, inspect [data-testid='live-visitors-today'] — returns null. Polling cadence: confirmed 3 calls in 6.5s. sendBeacon is used so request.post_data is undefined in Playwright listeners — verify by counting requests to /api/track, not bodies. /admin/login exclusion confirmed (0 track calls).",
+  "frontend_observations": {
+    "tracked_paths": ["/ x2", "/product x2", "/checkout x2"],
+    "admin_login_track_calls": 0,
+    "dashboard_polling_calls_in_6_5s": 3,
+    "testid_results": {
+      "live-active-now": "present (value=2)",
+      "live-on-product-page": "present (value=0)",
+      "live-on-cart": "present (value=0)",
+      "live-on-checkout": "present (value=2)",
+      "live-visitors-today": "MISSING"
+    },
+    "regression_dashboard_block_visible": true,
+    "top_pages_rendered": ["/product 11/7", "/checkout 5/4", "/ 4/1"]
+  }
+}

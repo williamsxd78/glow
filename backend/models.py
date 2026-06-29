@@ -431,3 +431,27 @@ class GalleryItem(BaseModel):
     url: str
     alt: str = ""
     order: int = 0
+
+
+
+# ============================== Analytics ==============================
+class PageViewCreate(BaseModel):
+    """Lightweight beacon fired by the browser on every route change + every 30s heartbeat."""
+    model_config = ConfigDict(extra="ignore")
+    session_id: str  # client-generated UUID, stored in localStorage
+    path: str        # e.g. "/", "/product", "/checkout"
+
+
+class LiveAnalytics(BaseModel):
+    """Snapshot for the admin dashboard."""
+    model_config = ConfigDict(extra="ignore")
+    active_now: int           # unique sessions seen in last 60 seconds
+    on_home: int              # active sessions currently on "/"
+    on_product: int           # active sessions currently on /product
+    on_cart: int              # active sessions currently on /cart
+    on_checkout: int          # active sessions currently on /checkout
+    visitors_today: int       # unique sessions today (UTC)
+    visitors_7d: int          # unique sessions in last 7 days
+    visitors_30d: int         # unique sessions in last 30 days
+    page_views_today: int     # total page views today
+    top_pages_7d: list        # [{ path, views, unique }]

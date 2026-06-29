@@ -27,10 +27,12 @@ from models import (
     Faq,
     GalleryCreate,
     GalleryItem,
+    LiveAnalytics,
     Order,
     OrderCreate,
     OrderItem,
     OrderTimelineEvent,
+    PageViewCreate,
     PublicSettings,
     ReviewCreate,
     Review,
@@ -62,6 +64,14 @@ async def lifespan(_app: FastAPI):
         obj_storage._init()
     except Exception as e:
         logger.warning("Object storage init deferred: %s", e)
+    # Analytics TTL indexes — auto-purge after 30 days so collections don't grow unbounded
+    try:
+        await db.page_views.create_index([("ts", 1)], expireAfterSeconds=60 * 60 * 24 * 30)
+        await db.page_views.create_index([("session_id", 1)])
+        await db.live_sessions.create_index([("last_seen", 1)], expireAfterSeconds=60 * 60 * 24)
+        await db.live_sessions.create_index([("path", 1)])
+    except Exception as e:
+        logger.warning("Analytics index setup deferred: %s", e)
     task = asyncio.create_task(cart_recovery_loop())
     yield
     task.cancel()
@@ -750,6 +760,106 @@ async def serve_file(path: str):
         content=data,
         media_type=record.get("content_type") or content_type,
         headers={"Cache-Control": "public, max-age=86400"},
+    )
+
+
+# ============================== Analytics ==============================
+def _normalize_path(p: str) -> str:
+    """Group analytics paths so /product/abc and /product?ref=x both count as /product."""
+    if not p:
+        return "/"
+    p = p.split("?", 1)[0].split("#", 1)[0]
+    if not p.startswith("/"):
+        p = "/" + p
+    # Treat trailing slash as identical
+    if len(p) > 1 and p.endswith("/"):
+        p = p.rstrip("/")
+    return p
+
+
+@api.post("/track")
+async def track_pageview(payload: PageViewCreate):
+    """Browser beacon. Idempotent upsert keyed by (session_id, hour-bucketed path)."""
+    now = datetime.now(timezone.utc)
+    path = _normalize_path(payload.path)
+    sid = (payload.session_id or "")[:64]
+    if not sid:
+        return {"ok": True}
+    await db.page_views.insert_one({
+        "session_id": sid,
+        "path": path,
+        "ts": now,
+    })
+    # Upsert session aggregate so the "active now" query is fast (no scanning page_views).
+    await db.live_sessions.update_one(
+        {"_id": sid},
+        {"$set": {"path": path, "last_seen": now},
+         "$setOnInsert": {"first_seen": now}},
+        upsert=True,
+    )
+    return {"ok": True}
+
+
+@api.get("/admin/analytics", response_model=LiveAnalytics)
+async def admin_analytics(user=Depends(require_admin)):
+    now = datetime.now(timezone.utc)
+    cutoff_active = now - timedelta(seconds=60)
+    start_today = datetime(now.year, now.month, now.day, tzinfo=timezone.utc)
+    cutoff_7d = now - timedelta(days=7)
+    cutoff_30d = now - timedelta(days=30)
+
+    active_now = await db.live_sessions.count_documents({"last_seen": {"$gte": cutoff_active}})
+
+    async def on_path(p: str) -> int:
+        return await db.live_sessions.count_documents({
+            "last_seen": {"$gte": cutoff_active},
+            "path": p,
+        })
+
+    on_home = await on_path("/")
+    on_product = await on_path("/product")
+    on_cart = await on_path("/cart")
+    on_checkout = await on_path("/checkout")
+
+    async def unique_visitors(since: datetime) -> int:
+        pipe = [
+            {"$match": {"ts": {"$gte": since}}},
+            {"$group": {"_id": "$session_id"}},
+            {"$count": "n"},
+        ]
+        async for row in db.page_views.aggregate(pipe):
+            return row["n"]
+        return 0
+
+    visitors_today = await unique_visitors(start_today)
+    visitors_7d = await unique_visitors(cutoff_7d)
+    visitors_30d = await unique_visitors(cutoff_30d)
+    page_views_today = await db.page_views.count_documents({"ts": {"$gte": start_today}})
+
+    pipe_pages = [
+        {"$match": {"ts": {"$gte": cutoff_7d}}},
+        {"$group": {
+            "_id": "$path",
+            "views": {"$sum": 1},
+            "uniqueSessions": {"$addToSet": "$session_id"},
+        }},
+        {"$project": {
+            "path": "$_id",
+            "views": 1,
+            "unique": {"$size": "$uniqueSessions"},
+            "_id": 0,
+        }},
+        {"$sort": {"views": -1}},
+        {"$limit": 10},
+    ]
+    top_pages_7d = [doc async for doc in db.page_views.aggregate(pipe_pages)]
+
+    return LiveAnalytics(
+        active_now=active_now,
+        on_home=on_home, on_product=on_product, on_cart=on_cart, on_checkout=on_checkout,
+        visitors_today=visitors_today, visitors_7d=visitors_7d, visitors_30d=visitors_30d,
+        page_views_today=page_views_today,
+        top_pages_7d=top_pages_7d,
     )
 
 

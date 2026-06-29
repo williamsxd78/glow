@@ -36,9 +36,11 @@ import "@/App.css";
 // "secret" path like /secret-panel instead of the well-known /admin. Set it in
 // frontend/.env (e.g. REACT_APP_ADMIN_BASE=secret-panel) and rebuild.
 import { ADMIN_BASE } from "./lib/adminBase";
+import { useAnalytics } from "./lib/analytics";
 
 function Shell() {
   const loc = useLocation();
+  useAnalytics();
   const isAdmin = loc.pathname.startsWith(`/${ADMIN_BASE}`);
   const minimal = loc.pathname.startsWith("/checkout")
     || loc.pathname.startsWith("/thank-you")
