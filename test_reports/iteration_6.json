@@ -1,0 +1,34 @@
+{
+  "summary": "Iteration 6 defensive regression after /app/deploy.sh edit (MongoDB localhost/127.0.0.1 regex trigger, upgraded 7.0 -> 8.0, 15s readiness wait). Preview pod is NOT touched by deploy.sh, so this run only confirms the running preview at https://flame-glow-demo.preview.emergentagent.com still works. Result: GREEN. Re-ran canonical /app/backend/tests/test_iteration5.py -> 10/10 passed (settings shape, offers=[single,couple,gift], payment_options.card=true, main_image reachable HTTPS image, admin login token, GET /, /product, /checkout all 200 SPA, POST /api/orders single+cod returns 200 with persisted items/payment_method). Playwright on /product: data-testid='product-buy-now' AND 'product-add-cart' both visible; product image naturalWidth=868 (>100); /checkout renders SPA with title 'GlowCamp 3D Printed Flame Lamp...'; zero pageerror events. No regressions introduced by the deploy.sh edit.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iteration5.py",
+    "/app/test_reports/pytest/iter6_results.xml"
+  ],
+  "action_items": [
+    "(Out of scope for preview) The deploy.sh changes can only be validated end-to-end on the user's Ubuntu VPS by re-running ./deploy.sh and verifying: (a) install-mongo block fires when MONGO_URL contains 'localhost' or '127.0.0.1', (b) mongod 8.0 noble package installs without jammy fallback, (c) seed runs after the 15s readiness wait. Preview pod cannot exercise this code path."
+  ],
+  "critical_code_review_comments": [
+    "deploy.sh edit looks correct: regex match on (localhost|127\\.0\\.0\\.1) is the right loosening; MongoDB 8.0 has native noble (24.04) packages so dropping the jammy fallback is fine; the 15s readiness loop guards against a race between systemctl start mongod and seed.py's first connection attempt. Recommend the loop log a clear timeout error if mongod still isn't accepting connections after 15s so users see why seed failed.",
+    "Pre-existing (not from this iteration): server.py is ~765 lines and PUT /api/admin/settings is a full-replace endpoint; both flagged in iter4/iter5 reports and still valid."
+  ],
+  "updated_files": [],
+  "success_rate": {
+    "backend": "100% (10/10 in test_iteration5.py)",
+    "frontend": "100% on smoke scope (/product Playwright + /checkout SPA + 0 page errors)"
+  },
+  "test_credentials": "admin@glowcamp.com / GlowCamp@2026 - validated live (token issued).",
+  "seed_data_creation": "POST /api/orders test creates one real order with full_name='TEST_Smoke Buyer' and a uuid-suffixed email. No cleanup endpoint exists for orders; admin can prune by the TEST_ prefix if desired. Stale announcement.text='TEST_announcement_2b3a5f' from a prior iteration still present in Settings (cosmetic only, unrelated to this iter).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "test_iteration5.py remains the canonical smoke suite for this app (10 self-contained tests, no admin state mutation). Always export REACT_APP_BACKEND_URL=https://flame-glow-demo.preview.emergentagent.com before invoking pytest. deploy.sh changes are VPS-only and cannot be tested inside Emergent. If a future iteration needs to verify the install path, do it on the user's Ubuntu host, not here.",
+  "rca of the issue": "No bug found in this iteration. The user's concern was defensive: confirm that editing /app/deploy.sh did not break the preview pod. It did not - deploy.sh is not part of the runtime path on the preview pod; nothing in /app/backend or /app/frontend was modified; all 10 smoke/regression checks plus Playwright product page verification pass identically to iter5's green baseline."
+}

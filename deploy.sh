@@ -85,20 +85,24 @@ fi
 npm install -g yarn pm2 >/dev/null 2>&1 || true
 ok "System deps installed (node $(node -v), python $(python3 --version | cut -d' ' -f2))"
 
-# MongoDB (only if we're using local)
-if [[ "$MONGO_URL" == "mongodb://localhost:27017" ]]; then
+# MongoDB — install whenever the URL points to a localhost daemon (this also covers
+# the case where the user originally set an external URL and later switched to local).
+if [[ "$MONGO_URL" =~ (localhost|127\.0\.0\.1) ]]; then
   if ! command -v mongod >/dev/null; then
-    log "Installing MongoDB 7.0…"
-    curl -fsSL https://www.mongodb.org/static/pgp/server-7.0.asc | gpg --dearmor -o /usr/share/keyrings/mongodb-server-7.0.gpg
+    log "Installing MongoDB 8.0…"
+    curl -fsSL https://www.mongodb.org/static/pgp/server-8.0.asc | gpg --dearmor -o /usr/share/keyrings/mongodb-server-8.0.gpg
     UBUNTU_CODENAME="$(lsb_release -sc)"
-    # Use jammy for ubuntu 24 (noble) since mongodb may not ship noble yet
-    [[ "$UBUNTU_CODENAME" == "noble" ]] && UBUNTU_CODENAME="jammy"
-    echo "deb [ arch=amd64,arm64 signed-by=/usr/share/keyrings/mongodb-server-7.0.gpg ] https://repo.mongodb.org/apt/ubuntu $UBUNTU_CODENAME/mongodb-org/7.0 multiverse" \
-      > /etc/apt/sources.list.d/mongodb-org-7.0.list
+    echo "deb [ arch=amd64,arm64 signed-by=/usr/share/keyrings/mongodb-server-8.0.gpg ] https://repo.mongodb.org/apt/ubuntu $UBUNTU_CODENAME/mongodb-org/8.0 multiverse" \
+      > /etc/apt/sources.list.d/mongodb-org-8.0.list
     apt-get update -qq
     apt-get install -y -qq mongodb-org
-    systemctl enable --now mongod
   fi
+  systemctl enable --now mongod
+  # Wait for it to accept connections (max ~15s)
+  for _ in {1..15}; do
+    if mongosh --quiet --eval "db.runCommand({ping:1})" >/dev/null 2>&1; then break; fi
+    sleep 1
+  done
   ok "MongoDB running on localhost:27017"
 fi
 
