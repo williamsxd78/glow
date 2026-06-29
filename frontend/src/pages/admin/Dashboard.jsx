@@ -39,6 +39,7 @@ function LiveCard({ label, value, sub }) {
 export default function Dashboard() {
   const [d, setD] = useState(null);
   const [a, setA] = useState(null);
+  const [aErr, setAErr] = useState("");
 
   useEffect(() => {
     api.get("/admin/dashboard").then((r) => setD(r.data));
@@ -48,7 +49,14 @@ export default function Dashboard() {
   useEffect(() => {
     let cancelled = false;
     const load = () => {
-      api.get("/admin/analytics").then((r) => { if (!cancelled) setA(r.data); }).catch(() => {});
+      api.get("/admin/analytics")
+        .then((r) => { if (!cancelled) { setA(r.data); setAErr(""); } })
+        .catch((e) => {
+          if (cancelled) return;
+          const status = e?.response?.status;
+          const detail = e?.response?.data?.detail || e?.message || "Unknown error";
+          setAErr(status ? `${status} — ${detail}` : String(detail));
+        });
     };
     load();
     const id = setInterval(load, 5000);
@@ -68,6 +76,14 @@ export default function Dashboard() {
         <h2 className="text-sm uppercase tracking-widest text-neutral-400">Live Traffic</h2>
         <span className="text-[10px] text-neutral-600">auto-refreshes every 5s</span>
       </div>
+      {aErr && (
+        <div
+          data-testid="live-traffic-error"
+          className="mb-3 rounded-xl border border-red-500/40 bg-red-500/10 text-red-300 text-xs px-3 py-2 font-mono"
+        >
+          analytics API failed: {aErr}
+        </div>
+      )}
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
         <LiveCard
           label="Active now"
