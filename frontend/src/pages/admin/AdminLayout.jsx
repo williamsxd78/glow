@@ -2,18 +2,19 @@ import React, { useEffect, useState } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { LayoutDashboard, ShoppingBag, Star, HelpCircle, Image as ImgIcon, Settings as SettingsIcon, Package, LogOut, Tag } from "lucide-react";
 import { api } from "../../lib/api";
+import { adminPath } from "../../lib/adminBase";
 import { FlameMark } from "../../components/FlameLogo";
 import { TID } from "../../constants/testIds";
 
 const NAV = [
-  { to: "/admin", label: "Dashboard", icon: LayoutDashboard, end: true },
-  { to: "/admin/orders", label: "Orders", icon: ShoppingBag },
-  { to: "/admin/product", label: "Product", icon: Package },
-  { to: "/admin/coupons", label: "Coupons", icon: Tag },
-  { to: "/admin/reviews", label: "Reviews", icon: Star },
-  { to: "/admin/faqs", label: "FAQs", icon: HelpCircle },
-  { to: "/admin/gallery", label: "Gallery", icon: ImgIcon },
-  { to: "/admin/settings", label: "Settings", icon: SettingsIcon },
+  { to: adminPath(),           label: "Dashboard", icon: LayoutDashboard, end: true },
+  { to: adminPath("orders"),   label: "Orders",    icon: ShoppingBag },
+  { to: adminPath("product"),  label: "Product",   icon: Package },
+  { to: adminPath("coupons"),  label: "Coupons",   icon: Tag },
+  { to: adminPath("reviews"),  label: "Reviews",   icon: Star },
+  { to: adminPath("faqs"),     label: "FAQs",      icon: HelpCircle },
+  { to: adminPath("gallery"),  label: "Gallery",   icon: ImgIcon },
+  { to: adminPath("settings"), label: "Settings",  icon: SettingsIcon },
 ];
 
 export default function AdminLayout() {
@@ -23,16 +24,16 @@ export default function AdminLayout() {
 
   useEffect(() => {
     const token = localStorage.getItem("glowcamp_admin_token");
-    if (!token) { nav("/admin/login"); return; }
+    if (!token) { nav(adminPath("login")); return; }
     api.get("/admin/me").then(() => setOk(true)).catch(() => {
       localStorage.removeItem("glowcamp_admin_token");
-      nav("/admin/login");
+      nav(adminPath("login"));
     });
   }, [nav]);
 
   function logout() {
     localStorage.removeItem("glowcamp_admin_token");
-    nav("/admin/login");
+    nav(adminPath("login"));
   }
 
   if (!ok) return <div className="min-h-screen flex items-center justify-center text-neutral-500">Loading...</div>;

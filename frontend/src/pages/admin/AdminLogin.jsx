@@ -2,13 +2,14 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Lock } from "lucide-react";
 import { api, apiErrorMessage } from "../../lib/api";
+import { adminPath } from "../../lib/adminBase";
 import { toast } from "sonner";
 import { TID } from "../../constants/testIds";
 import { FlameMark } from "../../components/FlameLogo";
 
 export default function AdminLogin() {
   const nav = useNavigate();
-  const [email, setEmail] = useState("admin@glowcamp.com");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -20,7 +21,7 @@ export default function AdminLogin() {
       localStorage.setItem("glowcamp_admin_token", data.token);
       localStorage.setItem("glowcamp_admin_email", data.email);
       toast.success("Welcome back");
-      nav("/admin");
+      nav(adminPath());
     } catch (err) {
       toast.error(apiErrorMessage(err, "Invalid credentials"));
     } finally {

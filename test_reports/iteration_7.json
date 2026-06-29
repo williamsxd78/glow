@@ -1,0 +1,25 @@
+{
+  "summary": "Iteration 7 — Regression for configurable admin slug refactor (REACT_APP_ADMIN_BASE). Preview pod has no env override so prefix correctly falls back to 'admin'. Backend test_iteration5.py: 10/10 PASS. Frontend Playwright (11 checks): ALL PASS — (1) /admin/login email input default value is '' (was 'admin@glowcamp.com'), (2) admin@glowcamp.com / GlowCamp@2026 logs in and redirects to /admin (not /admin/login), (3) all 8 sidebar links resolve to correct paths (/admin, /admin/orders, /admin/product, /admin/coupons, /admin/reviews, /admin/faqs, /admin/gallery, /admin/settings), (4) navigation between Orders and Settings works, (5) data-testid='admin-logout' returns user to /admin/login and clears token, (6) storefront chrome (Navbar, Footer) renders on / and (7) is properly hidden on /admin/login. Backend contract regression: POST /api/admin/login → 200 (227-char token), GET /api/admin/me with Bearer → 200, GET /api/settings → 200. No console errors, no page errors.",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": { "ui_bugs": [], "integration_issues": [], "design_issues": [] },
+  "test_report_links": [
+    "/app/backend/tests/test_iteration5.py",
+    "/app/test_reports/pytest/iter7_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "adminBase.js is clean: strips leading/trailing slashes via regex and sanitizes the sub path. Default 'admin' fallback preserves the previous URL contract — verified live.",
+    "AdminLogin.jsx now starts email='' as intended; the form's required attr ensures the field can't be submitted blank.",
+    "All 5 chrome components (Navbar, Footer, StickyCart, WhatsAppButton, LivePurchaseToasts) consistently use loc.pathname.startsWith(`/${ADMIN_BASE}`) — no stale '/admin' hardcodes remain in storefront chrome logic.",
+    "Minor suggestion (non-blocking): if a user sets REACT_APP_ADMIN_BASE='login' or any value that collides with an existing storefront route, the admin routes would shadow the storefront. Document that the slug must be unique. Not a bug today.",
+    "Pre-existing (carried over from iter4/5/6): server.py is ~765 lines; PUT /api/admin/settings is full-replace. Not in scope this iteration."
+  ],
+  "updated_files": [],
+  "success_rate": { "backend": "100% (10/10 test_iteration5)", "frontend": "100% (11/11 Playwright checks)" },
+  "test_credentials": "admin@glowcamp.com / GlowCamp@2026 — validated live (227-char token issued, /api/admin/me returns 200).",
+  "seed_data_creation": "test_iteration5.py creates one TEST_ prefixed order via POST /api/orders (full_name='TEST_Smoke Buyer'). No new data created by frontend Playwright run.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "test_iteration5.py remains the canonical 10-test smoke suite. The new ADMIN_BASE/adminPath() abstraction is correct — to validate the secret-slug feature itself, set REACT_APP_ADMIN_BASE in frontend/.env (e.g. 'secret-panel'), rebuild, and verify /secret-panel/login renders the admin login and /admin/login returns 404 (SPA fallback to Home). Preview pod has no override so only the 'admin' fallback path is exercised here.",
+  "rca of the issue": "No bug. The refactor is purely a frontend routing abstraction (new lib/adminBase.js + updated route definitions and isAdmin checks). Backend `/api/admin/...` API contract is unchanged. With REACT_APP_ADMIN_BASE unset the slug falls back to 'admin' so all pre-existing flows behave identically. The pre-fill removal in AdminLogin.jsx is a security improvement — admin email is no longer leaked in the page source."
+}

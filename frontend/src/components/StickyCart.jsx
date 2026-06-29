@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useCart } from "../lib/cart";
 import { useSettings } from "../lib/hooks";
 import { resolveImageUrl } from "../lib/api";
+import { ADMIN_BASE } from "../lib/adminBase";
 import { TID } from "../constants/testIds";
 
 export default function StickyCart() {
@@ -21,7 +22,7 @@ export default function StickyCart() {
   }, []);
 
   const hideOn = ["/cart", "/checkout", "/track-order"].some((p) => loc.pathname.startsWith(p));
-  if (hideOn || loc.pathname.startsWith("/admin") || loc.pathname.startsWith("/thank-you")) return null;
+  if (hideOn || loc.pathname.startsWith(`/${ADMIN_BASE}`) || loc.pathname.startsWith("/thank-you")) return null;
   if (!show) return null;
   if (!s) return null;
   const single = s.offers.find((o) => o.key === "single") || s.offers[0];

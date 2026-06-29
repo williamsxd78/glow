@@ -3,12 +3,13 @@ import { Link, useLocation } from "react-router-dom";
 import { ShoppingBag, Truck } from "lucide-react";
 import { useCart } from "../lib/cart";
 import { FlameMark } from "./FlameLogo";
+import { ADMIN_BASE } from "../lib/adminBase";
 import { TID } from "../constants/testIds";
 
 export default function Navbar() {
   const { totalQty } = useCart();
   const loc = useLocation();
-  const isAdmin = loc.pathname.startsWith("/admin");
+  const isAdmin = loc.pathname.startsWith(`/${ADMIN_BASE}`);
   if (isAdmin) return null;
 
   return (

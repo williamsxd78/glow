@@ -1,12 +1,13 @@
 import React from "react";
 import { useLocation } from "react-router-dom";
 import { useSettings } from "../lib/hooks";
+import { ADMIN_BASE } from "../lib/adminBase";
 
 export default function WhatsAppButton() {
   const { data: s } = useSettings();
   const loc = useLocation();
   // Hide on functional / admin pages to avoid covering CTAs
-  if (loc.pathname.startsWith("/admin")) return null;
+  if (loc.pathname.startsWith(`/${ADMIN_BASE}`)) return null;
   if (loc.pathname.startsWith("/cart") || loc.pathname.startsWith("/checkout") || loc.pathname.startsWith("/thank-you") || loc.pathname.startsWith("/track-order")) return null;
   if (!s?.whatsapp_number) return null;
 

@@ -32,9 +32,14 @@ import Coupons from "@/pages/admin/Coupons";
 
 import "@/App.css";
 
+// Admin URL prefix is configurable via REACT_APP_ADMIN_BASE so you can use a
+// "secret" path like /secret-panel instead of the well-known /admin. Set it in
+// frontend/.env (e.g. REACT_APP_ADMIN_BASE=secret-panel) and rebuild.
+import { ADMIN_BASE } from "./lib/adminBase";
+
 function Shell() {
   const loc = useLocation();
-  const isAdmin = loc.pathname.startsWith("/admin");
+  const isAdmin = loc.pathname.startsWith(`/${ADMIN_BASE}`);
   const minimal = loc.pathname.startsWith("/checkout")
     || loc.pathname.startsWith("/thank-you")
     || loc.pathname.startsWith("/track-order");
@@ -68,8 +73,8 @@ export default function App() {
             <Route path="/policy/:slug" element={<PolicyPage />} />
           </Route>
 
-          <Route path="/admin/login" element={<AdminLogin />} />
-          <Route path="/admin" element={<AdminLayout />}>
+          <Route path={`/${ADMIN_BASE}/login`} element={<AdminLogin />} />
+          <Route path={`/${ADMIN_BASE}`} element={<AdminLayout />}>
             <Route index element={<Dashboard />} />
             <Route path="orders" element={<Orders />} />
             <Route path="product" element={<ProductPage />} />

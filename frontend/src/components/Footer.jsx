@@ -3,11 +3,12 @@ import { Link, useLocation } from "react-router-dom";
 import { FlameMark } from "./FlameLogo";
 import { Instagram, Youtube, Facebook } from "lucide-react";
 import { useSettings } from "../lib/hooks";
+import { ADMIN_BASE } from "../lib/adminBase";
 
 export default function Footer() {
   const loc = useLocation();
   const { data: s } = useSettings();
-  if (loc.pathname.startsWith("/admin")) return null;
+  if (loc.pathname.startsWith(`/${ADMIN_BASE}`)) return null;
 
   return (
     <footer className="bg-[#070707] border-t border-ink-500/40 mt-24">

@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { CheckCircle2, X } from "lucide-react";
 import { useSettings } from "../lib/hooks";
 import { resolveImageUrl } from "../lib/api";
+import { ADMIN_BASE } from "../lib/adminBase";
 
 const FIRST_NAMES = [
   "Justin","Sarah","Michael","Ashley","James","Jessica","David","Emily","Daniel","Megan",
@@ -45,7 +46,7 @@ export default function LivePurchaseToasts() {
 
   // Hide on admin / cart / checkout / track / thank-you for focus
   const hidden =
-    loc.pathname.startsWith("/admin")
+    loc.pathname.startsWith(`/${ADMIN_BASE}`)
     || loc.pathname.startsWith("/cart")
     || loc.pathname.startsWith("/checkout")
     || loc.pathname.startsWith("/thank-you")
