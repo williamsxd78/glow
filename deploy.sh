@@ -114,9 +114,11 @@ fi
 # shellcheck disable=SC1091
 source venv/bin/activate
 pip install -q --upgrade pip
-pip install -q -r requirements.txt
-pip install -q emergentintegrations --extra-index-url https://d33sy5i8bnduwe.cloudfront.net/simple/ || \
-  warn "emergentintegrations install failed — image uploads via Emergent Object Storage may not work"
+# emergentintegrations is hosted on Emergent's CDN, not PyPI — pass the extra
+# index URL so pip can resolve it while installing requirements.txt.
+pip install -q \
+  --extra-index-url https://d33sy5i8bnduwe.cloudfront.net/simple/ \
+  -r requirements.txt
 deactivate
 
 cat > "$REPO_DIR/backend/.env" <<EOF

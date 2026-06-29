@@ -1,0 +1,41 @@
+{
+  "summary": "Iteration 4 defensive smoke test passed: 7/7 new tests in test_iteration4.py green. The review_request acceptance criteria are all met against the LIVE preview deployment at https://flame-glow-demo.preview.emergentagent.com — GET /api/settings exposes payment_options + offers + card_extra_fields keys; POST /api/admin/login returns a token with the documented credentials; GET /api/admin/orders returns a list; frontend GET / renders HTML containing 'GlowCamp'; frontend GET /checkout serves the React SPA index.html with status 200; regression of the dynamic card_extra_fields capture flow works (added a field with capture=true via full-Settings PUT, posted an order, captured value persisted on the resulting order); per-payment-method toggle works (card_enabled=false propagates to payment_options.card=false in public settings). Snapshot-and-restore teardown verified — final state has card=True, card_extra_fields=[], offers untouched. The deploy.sh / DEPLOY.md changes did NOT touch app code and the running pod is unaffected.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "GET /api/settings (data state, NOT a regression)", "issue": "Live DB has offers=[] currently. Not caused by this iteration — it pre-dates the deploy.sh edit. It does cause the OLD test files (backend_test.py, test_iteration2.py, test_iteration3.py) to fail with 'Unknown offer single' because they hardcode offer_key='single'. iter4 handles this by ensuring an offer exists in the PUT payload. Suggest re-seeding offers via /app/backend/seed.py or the admin UI if you want the public store to actually be purchasable, but unrelated to deploy.sh."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iteration4.py",
+    "/app/test_reports/pytest/iter4_results.xml",
+    "/app/test_reports/pytest/iter4_full_results.xml"
+  ],
+  "action_items": [
+    "(Informational, not blocking) deploy.sh fix cannot be verified inside Emergent — user must re-run deploy.sh on their Ubuntu 24.04 VPS and confirm pip resolves emergentintegrations==0.2.0 via --extra-index-url https://d33sy5i8bnduwe.cloudfront.net/simple/.",
+    "(Pre-existing, NOT this iteration) Live DB offers list is empty. Reseed via /app/backend/seed.py or admin UI so the storefront has purchasable offers; this will also un-break the older iter1/iter2/iter3 tests that hardcode offer_key='single'."
+  ],
+  "critical_code_review_comments": [
+    "/app/backend/server.py still 765 lines (was 763 in iter3) — same code-split recommendation from iter3 still applies, not urgent.",
+    "PUT /api/admin/settings does a full-replace ($set: payload.model_dump()). Partial-update clients (e.g., a UI form that only sends payment_options) will silently lose unrelated nested config because Pydantic fills missing fields with defaults. Consider either (a) accepting Optional[PartialSettings] and merging server-side, or (b) documenting that all callers must round-trip the full Settings doc. Current admin UI appears to do the full round-trip, so it works in practice — but the API contract is brittle for any future third-party admin client.",
+    "deploy.sh fix is correct in concept (--extra-index-url to Emergent's CDN). Could not validate end-to-end since VPS pip resolution is out of this environment's reach."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iteration4.py (new - 7 smoke + regression tests)"
+  ],
+  "success_rate": {
+    "backend": "100% on iter4 scope (7/7 new tests)",
+    "frontend": "100% on iter4 smoke scope (home renders GlowCamp, /checkout serves SPA)"
+  },
+  "test_credentials": "admin@glowcamp.com / GlowCamp@2026 (validated against live preview)",
+  "seed_data_creation": "Test transiently appends a TEST_smoke offer + a TEST_cf_<hex> capture field via PUT /api/admin/settings, posts one order, then restores the full original Settings snapshot in the module teardown. Verified post-run state: card=True, card_extra_fields=[], offers unchanged (still empty as before the run).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "iter1/iter2/iter3 test files now have pre-existing failures (10) because live DB offers=[]. These are NOT regressions from any recent code change — they need offers reseeded. Use /app/backend/tests/test_iteration4.py as the canonical smoke-test suite going forward; it self-provisions the offer it needs and cleans up after itself via a full-Settings snapshot+restore. PUT /api/admin/settings is a FULL-replace endpoint, so always GET first, mutate the doc, PUT back the whole object — sending only nested keys will reset everything else to defaults. The deploy.sh and DEPLOY.md changes were the only edits this iteration; they touch only VPS install paths and the running preview pod does not execute them, so no preview-side validation is possible.",
+  "rca of the issue": "No P0/P1 issues in scope. The deploy.sh edit (adding --extra-index-url https://d33sy5i8bnduwe.cloudfront.net/simple/ to the backend pip install command) is the documented way to resolve emergentintegrations from Emergent's private CDN and is consistent with /app/backend/requirements.txt line 27. Running the smoke suite against the live preview confirms no app-code regression. The 10 pre-existing failures in older test files trace back to live DB offers=[] (admin appears to have cleared offers since iter3), unrelated to this iteration."
+}
