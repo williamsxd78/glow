@@ -88,10 +88,10 @@ export default function Dashboard() {
         />
       </div>
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <Card icon={Users} accent="text-emerald-400" label="Visitors today" value={a ? a.visitors_today : "..."} hint={a ? `${a.page_views_today} page views` : ""} />
-        <Card icon={Users} accent="text-emerald-400" label="Visitors (7d)" value={a ? a.visitors_7d : "..."} />
-        <Card icon={Users} accent="text-emerald-400" label="Visitors (30d)" value={a ? a.visitors_30d : "..."} />
-        <Card icon={Activity} accent="text-emerald-400" label="Active sessions" value={a ? a.active_now : "..."} hint="last 60s" />
+        <Card icon={Users} accent="text-emerald-400" label="Visitors today" value={a ? a.visitors_today : "..."} hint={a ? `${a.page_views_today} page views` : ""} testId="live-visitors-today" />
+        <Card icon={Users} accent="text-emerald-400" label="Visitors (7d)" value={a ? a.visitors_7d : "..."} testId="live-visitors-7d" />
+        <Card icon={Users} accent="text-emerald-400" label="Visitors (30d)" value={a ? a.visitors_30d : "..."} testId="live-visitors-30d" />
+        <Card icon={Activity} accent="text-emerald-400" label="Active sessions" value={a ? a.active_now : "..."} hint="last 60s" testId="live-active-sessions" />
       </div>
 
       {/* ============ TOP PAGES ============ */}
