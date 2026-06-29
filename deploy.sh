@@ -132,9 +132,13 @@ ok "backend/.env written"
 
 # Start / restart with pm2
 pm2 delete glowcamp-backend >/dev/null 2>&1 || true
+# --interpreter none tells pm2: this is a standalone binary, do NOT try to run
+# it via Node.js. Without this flag pm2 misreads the uvicorn binary as ESM and
+# the process crashes immediately with `SyntaxError: Unexpected identifier 'uvicorn'`.
 pm2 start "$REPO_DIR/backend/venv/bin/uvicorn" \
   --name glowcamp-backend \
   --cwd "$REPO_DIR/backend" \
+  --interpreter none \
   -- server:app --host 127.0.0.1 --port 8001 --workers 2
 pm2 save
 pm2 startup systemd -u root --hp /root >/dev/null 2>&1 || true
