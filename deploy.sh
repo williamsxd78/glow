@@ -99,11 +99,18 @@ if [[ "$MONGO_URL" =~ (localhost|127\.0\.0\.1) ]]; then
   fi
   systemctl enable --now mongod
   # Wait for it to accept connections (max ~15s)
+  MONGO_READY=0
   for _ in {1..15}; do
-    if mongosh --quiet --eval "db.runCommand({ping:1})" >/dev/null 2>&1; then break; fi
+    if mongosh --quiet --eval "db.runCommand({ping:1})" >/dev/null 2>&1; then
+      MONGO_READY=1; break
+    fi
     sleep 1
   done
-  ok "MongoDB running on localhost:27017"
+  if [[ "$MONGO_READY" -eq 1 ]]; then
+    ok "MongoDB running on localhost:27017"
+  else
+    warn "MongoDB did not become ready within 15s — run 'sudo systemctl status mongod' to debug"
+  fi
 fi
 
 # ──────────────────────────────────────────────────────────────────────────────
