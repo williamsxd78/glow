@@ -1,0 +1,39 @@
+{
+  "summary": "Iteration 5 defensive regression smoke against the running preview pod (https://flame-glow-demo.preview.emergentagent.com) — all green. 10/10 new pytest cases in test_iteration5.py pass and Playwright UI verification confirms the product page renders correctly. Backend: GET /api/settings returns 200 with offers=[single,couple,gift], payment_options (cod+card present), and product.main_image is a valid https URL that returns HTTP 200 with an image content-type. POST /api/admin/login with admin@glowcamp.com / GlowCamp@2026 returns a valid token. POST /api/orders with offer_key='single' + payment_method='cod' returns 200 and persists items/payment_method. Frontend: GET /, /product, /checkout all return 200 SPA HTML containing 'GlowCamp' and #root marker. Playwright on /product: product image (868x1441) is actually rendered (naturalWidth>100), data-testid='product-buy-now' AND data-testid='product-add-cart' both visible, zero console/pageerror events. Home page renders 17 loaded images. The deploy.sh edit (preview pod does NOT execute it) caused no regression in the running app.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Site-wide announcement bar", "issues": ["Live preview DB still has announcement.text='TEST_announcement_2b3a5f' enabled — leftover test artifact from a prior iteration's seed/cleanup miss. Not caused by deploy.sh edit. Should be reset to a real marketing string or disabled via PUT /api/admin/settings before any demo."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iteration5.py",
+    "/app/test_reports/pytest/iter5_results.xml"
+  ],
+  "action_items": [
+    "(Cosmetic, not from this iteration) Overwrite the stale announcement.text='TEST_announcement_2b3a5f' (or set announcement.enabled=false) via PUT /api/admin/settings — leaks through into the home/product pages.",
+    "(Informational, out of scope for preview) The VPS-side deploy.sh same-origin REACT_APP_BACKEND_URL='' fix can only be verified by re-running deploy.sh on the user's Ubuntu host; preview pod is unaffected and stays green."
+  ],
+  "critical_code_review_comments": [
+    "deploy.sh edit (writing empty REACT_APP_BACKEND_URL so the frontend uses same-origin /api) is the correct CRA workaround for HTTP-only hosts where the build-time HTTPS URL would mismatch the runtime scheme. The api.js logic (`${BACKEND_URL}/api`) gracefully degrades to '/api' when BACKEND_URL='' — same-origin works on both HTTP and HTTPS without a rebuild, exactly as the user described.",
+    "Pre-existing observations from iter4 still stand: server.py is ~765 lines and PUT /api/admin/settings is a full-replace endpoint (callers must round-trip the whole Settings doc or unrelated nested keys reset to defaults). Not introduced by this iteration."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iteration5.py (new — 10 smoke + regression tests; superset of iter4 plus /product route + main_image reachability)"
+  ],
+  "success_rate": {
+    "backend": "100% (10/10 in test_iteration5.py)",
+    "frontend": "100% on smoke scope (/, /product, /checkout all serve SPA; product image + Buy Now confirmed via Playwright; 0 console errors)"
+  },
+  "test_credentials": "admin@glowcamp.com / GlowCamp@2026 — validated live",
+  "seed_data_creation": "No persistent test data created in this iteration. POST /api/orders writes a real order row with TEST_ prefixed name+email — no cleanup endpoint exists for orders, but admin can identify by 'TEST_Smoke Buyer' prefix if pruning is desired.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "test_iteration5.py is the canonical post-deploy.sh smoke suite. It is self-contained (no PUT settings mutation), so it never touches admin state — safe to run repeatedly. Use REACT_APP_BACKEND_URL env var when invoking pytest (it's not auto-exported in the shell). The live preview DB currently has: offers=[single,couple,gift] seeded by the main agent, announcement.text='TEST_announcement_2b3a5f' (stale, cosmetic only), payment_options={card:true, paypal:true, cod:true, others false}. The deploy.sh / .env behaviour cannot be exercised inside Emergent — that requires the user's VPS.",
+  "rca of the issue": "No bug present. The user's concern was purely defensive: did editing /app/deploy.sh break the running preview pod? Answer: no — deploy.sh is not invoked at runtime on the preview pod, /app/frontend/.env still points at the original preview URL, /app/backend/server.py was not modified, and all 10 smoke/regression checks plus Playwright product-page render confirm parity with iter4's green baseline."
+}

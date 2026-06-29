@@ -145,8 +145,11 @@ ok "Backend running under pm2 on 127.0.0.1:8001"
 # ──────────────────────────────────────────────────────────────────────────────
 log "Building frontend (this can take 2–4 minutes)…"
 cd "$REPO_DIR/frontend"
+# IMPORTANT: empty REACT_APP_BACKEND_URL = same-origin API calls.
+# This way the frontend works regardless of whether SSL is on yet, and the
+# nginx reverse-proxy below handles /api/ → backend automatically.
 cat > .env <<EOF
-REACT_APP_BACKEND_URL=https://$DOMAIN
+REACT_APP_BACKEND_URL=
 EOF
 yarn install --frozen-lockfile --silent
 yarn build
