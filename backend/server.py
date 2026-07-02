@@ -728,16 +728,33 @@ async def admin_delete_coupon(cid: str, user=Depends(require_admin)):
 # ============================== SMTP Test ==============================
 @api.post("/admin/smtp/test")
 async def admin_smtp_test(body: dict, user=Depends(require_admin)):
-    s = await get_settings_doc()
-    to = body.get("to") or s.smtp.from_email
+    """Send a test email. Accepts optional inline `smtp` config so the admin can
+    verify credentials BEFORE saving. Falls back to the saved settings otherwise."""
+    saved = await get_settings_doc()
+    inline = body.get("smtp") or {}
+    if inline:
+        # merge saved + inline (inline wins) so admin can override just what they changed
+        merged = saved.smtp.model_dump()
+        merged.update({k: v for k, v in inline.items() if v is not None})
+        # For a test, force enabled=True so a "disabled" toggle doesn't block the check
+        merged["enabled"] = True
+        smtp_cfg = merged
+    else:
+        smtp_cfg = saved.smtp.model_dump()
+
+    to = body.get("to") or smtp_cfg.get("from_email")
     if not to:
-        raise HTTPException(status_code=400, detail="to email required")
-    ok = send_email(
-        s.smtp.model_dump(), to,
+        raise HTTPException(status_code=400, detail="Recipient email is required")
+
+    from email_util import send_email_with_error
+    ok, err = send_email_with_error(
+        smtp_cfg, to,
         "GlowCamp SMTP test",
-        "<p>This is a test email from your GlowCamp admin panel.</p>",
+        "<p>This is a test email from your GlowCamp admin panel. If you can read this, SMTP is working.</p>",
     )
-    return {"sent": ok}
+    if not ok:
+        raise HTTPException(status_code=400, detail=err or "SMTP failed")
+    return {"sent": True, "to": to}
 
 
 # ============================== Uploads ==============================

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { api } from "../../lib/api";
+import { api, apiErrorMessage } from "../../lib/api";
 import { toast } from "sonner";
 
 function Section({ title, children }) {
@@ -61,8 +61,14 @@ export default function Settings() {
   async function smtpTest() {
     const to = prompt("Send test email to:", s.smtp.from_email || "");
     if (!to) return;
-    const { data } = await api.post("/admin/smtp/test", { to });
-    toast[data.sent ? "success" : "error"](data.sent ? "Test email sent" : "Email could not be sent (check SMTP config)");
+    const tId = toast.loading("Sending test email...");
+    try {
+      // Send the CURRENT form values so admin can test without needing to Save first.
+      const { data } = await api.post("/admin/smtp/test", { to, smtp: s.smtp });
+      toast.success(`Test email sent to ${data.to || to}`, { id: tId });
+    } catch (err) {
+      toast.error(apiErrorMessage(err, "SMTP failed"), { id: tId, duration: 10000 });
+    }
   }
 
   if (!s) return <div className="text-neutral-500">Loading...</div>;
