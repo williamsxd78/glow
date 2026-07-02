@@ -72,7 +72,9 @@ class SMTPSettings(BaseModel):
     password: str = ""
     from_email: str = ""
     from_name: str = "GlowCamp"
-    use_tls: bool = True
+    use_tls: bool = True  # kept for backward-compat; `security` takes precedence when set
+    # Encryption mode. "auto" picks based on port (465→SSL, 587/25→STARTTLS, else STARTTLS→SSL fallback).
+    security: Literal["auto", "tls", "ssl", "none"] = "auto"
 
 
 class EmailTemplate(BaseModel):

@@ -269,14 +269,39 @@ export default function Settings() {
 
       <Section title="SMTP Email Settings">
         <Field label="Enabled"><Toggle checked={s.smtp.enabled} onChange={(v) => up("smtp.enabled", v)} label="Send transactional emails" /></Field>
-        <Field label="Use TLS"><Toggle checked={s.smtp.use_tls} onChange={(v) => up("smtp.use_tls", v)} label="STARTTLS" /></Field>
-        <Field label="SMTP Host"><input className={inputCls} value={s.smtp.host} onChange={(e) => up("smtp.host", e.target.value)} /></Field>
-        <Field label="SMTP Port"><input type="number" className={inputCls} value={s.smtp.port} onChange={(e) => up("smtp.port", parseInt(e.target.value) || 0)} /></Field>
+        <Field label="Encryption">
+          <select
+            className={inputCls}
+            value={s.smtp.security || "auto"}
+            onChange={(e) => {
+              const v = e.target.value;
+              up("smtp.security", v);
+              // Keep legacy use_tls in sync so older backends still behave correctly
+              up("smtp.use_tls", v === "tls" || (v === "auto" && (parseInt(s.smtp.port) === 587 || parseInt(s.smtp.port) === 25)));
+              // Helpful port auto-suggest
+              if (v === "ssl" && parseInt(s.smtp.port) === 587) up("smtp.port", 465);
+              if (v === "tls" && parseInt(s.smtp.port) === 465) up("smtp.port", 587);
+            }}
+            data-testid="smtp-security-select"
+          >
+            <option value="auto">Auto (recommended — detects from port)</option>
+            <option value="ssl">SSL (implicit — usually port 465)</option>
+            <option value="tls">TLS / STARTTLS (usually port 587)</option>
+            <option value="none">None (plaintext — not recommended)</option>
+          </select>
+        </Field>
+        <Field label="SMTP Host"><input className={inputCls} value={s.smtp.host} onChange={(e) => up("smtp.host", e.target.value)} placeholder="smtp.gmail.com" /></Field>
+        <Field label="SMTP Port"><input type="number" className={inputCls} value={s.smtp.port} onChange={(e) => up("smtp.port", parseInt(e.target.value) || 0)} placeholder="587 or 465" /></Field>
         <Field label="Username"><input className={inputCls} value={s.smtp.username} onChange={(e) => up("smtp.username", e.target.value)} /></Field>
         <Field label="Password"><input type="password" className={inputCls} value={s.smtp.password} onChange={(e) => up("smtp.password", e.target.value)} /></Field>
         <Field label="From Email"><input className={inputCls} value={s.smtp.from_email} onChange={(e) => up("smtp.from_email", e.target.value)} /></Field>
         <Field label="From Name"><input className={inputCls} value={s.smtp.from_name} onChange={(e) => up("smtp.from_name", e.target.value)} /></Field>
-        <div className="sm:col-span-2"><button onClick={smtpTest} className="btn-ghost text-sm">Send Test Email</button></div>
+        <div className="sm:col-span-2 flex items-center gap-3 flex-wrap">
+          <button onClick={smtpTest} className="btn-ghost text-sm" data-testid="smtp-test-btn">Send Test Email</button>
+          <p className="text-[11px] text-neutral-500">
+            Tip: <b className="text-amber-500/80">Auto</b> picks SSL for port 465 and STARTTLS for 587 automatically, and retries with the other mode if the first fails.
+          </p>
+        </div>
       </Section>
 
       <Section title="Cart Recovery">
