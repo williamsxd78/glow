@@ -328,9 +328,14 @@ async def create_order(payload: OrderCreate):
         subject, body = premium_emails.build_order_confirmation(
             s.model_dump(), order.model_dump()
         )
-        send_email(s.smtp.model_dump(), order.email, subject, body)
+        from email_util import send_email_with_error
+        ok, err = send_email_with_error(s.smtp.model_dump(), order.email, subject, body)
+        if ok:
+            logger.info("Order confirmation email sent to %s (order %s)", order.email, order.order_number)
+        else:
+            logger.warning("Order confirmation email FAILED for %s (order %s): %s", order.email, order.order_number, err)
     except Exception as e:
-        logger.warning("Email send skipped: %s", e)
+        logger.warning("Order confirmation email crashed for %s: %s", order.email, e)
     return order
 
 
@@ -523,17 +528,22 @@ async def admin_list_orders(
 
 async def _send_order_status_email(order: dict, template_key: str) -> None:
     """Send a rendered transactional email for an order lifecycle transition.
-    Uses the premium Shopify-style builders in email_templates.py. Silently
-    no-ops if SMTP is disabled or the builder is missing."""
+    Uses the premium Shopify-style builders in email_templates.py. Logs the
+    specific reason if it fails so admins can diagnose via `pm2 logs`."""
     try:
         s = await get_settings_doc()
         builder = premium_emails.BUILDERS.get(template_key)
         if not builder or not order.get("email"):
             return
         subject, body = builder(s.model_dump(), order)
-        send_email(s.smtp.model_dump(), order["email"], subject, body)
+        from email_util import send_email_with_error
+        ok, err = send_email_with_error(s.smtp.model_dump(), order["email"], subject, body)
+        if ok:
+            logger.info("%s email sent to %s (order %s)", template_key, order["email"], order.get("order_number", ""))
+        else:
+            logger.warning("%s email FAILED for %s (order %s): %s", template_key, order["email"], order.get("order_number", ""), err)
     except Exception as e:
-        logger.warning("Status email skipped (%s): %s", template_key, e)
+        logger.warning("Status email crashed (%s): %s", template_key, e)
 
 
 # Map order.status transitions → which template to send
@@ -796,17 +806,39 @@ async def admin_email_preview(template: str = "order_confirmation", user=Depends
 @api.post("/admin/email/send-preview")
 async def admin_email_send_preview(body: dict, user=Depends(require_admin)):
     """Actually SEND the sample rendered template to `to` — useful for verifying
-    inbox rendering across Gmail/Outlook/etc."""
+    inbox rendering across Gmail/Outlook/etc. Accepts an optional inline `smtp`
+    config so the admin can verify without clicking Save Changes first."""
     template = body.get("template", "order_confirmation")
     to = body.get("to", "")
     if not to:
         raise HTTPException(status_code=400, detail="Recipient email is required")
     if template not in premium_emails.BUILDERS:
         raise HTTPException(status_code=400, detail=f"Unknown template: {template}")
-    s = await get_settings_doc()
+    saved = await get_settings_doc()
     preview = await admin_email_preview(template=template, user=user)
+
+    # Merge inline SMTP (if provided) with saved SMTP — same rules as the main
+    # SMTP test endpoint. Empty strings are treated as "unchanged" so we never
+    # blank out the saved password when the frontend rehydrates as "".
+    inline = body.get("smtp") or {}
+    smtp_cfg = saved.smtp.model_dump()
+    if inline:
+        for k, v in inline.items():
+            if v is None:
+                continue
+            if isinstance(v, str) and v.strip() == "" and smtp_cfg.get(k):
+                continue
+            smtp_cfg[k] = v
+        smtp_cfg["enabled"] = True
+
+    logger.info(
+        "Order-email test → template=%s host=%s port=%s security=%s username=%s to=%s",
+        template, smtp_cfg.get("host"), smtp_cfg.get("port"),
+        smtp_cfg.get("security"), smtp_cfg.get("username"), to,
+    )
+
     from email_util import send_email_with_error
-    ok, err = send_email_with_error(s.smtp.model_dump(), to, preview["subject"], preview["html"])
+    ok, err = send_email_with_error(smtp_cfg, to, preview["subject"], preview["html"])
     if not ok:
         raise HTTPException(status_code=400, detail=err or "SMTP failed")
     return {"sent": True, "to": to, "template": template}

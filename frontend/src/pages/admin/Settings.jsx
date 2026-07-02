@@ -33,9 +33,15 @@ function Toggle({ checked, onChange, label }) {
 
 export default function Settings() {
   const [s, setS] = useState(null);
+  const [saved, setSaved] = useState(null);  // last-persisted snapshot for dirty detection
   const [busy, setBusy] = useState(false);
 
-  useEffect(() => { api.get("/admin/settings").then((r) => setS(r.data)); }, []);
+  useEffect(() => {
+    api.get("/admin/settings").then((r) => {
+      setS(r.data);
+      setSaved(JSON.parse(JSON.stringify(r.data)));
+    });
+  }, []);
 
   function up(path, value) {
     setS((cur) => {
@@ -52,11 +58,17 @@ export default function Settings() {
     setBusy(true);
     try {
       await api.put("/admin/settings", s);
+      setSaved(JSON.parse(JSON.stringify(s)));
       toast.success("Settings saved");
     } catch (e) {
       toast.error("Failed to save");
     } finally { setBusy(false); }
   }
+
+  // True if the SMTP block in the form differs from what's persisted in DB.
+  // Used to warn the admin that real orders will use SAVED values, not the
+  // ones in the form.
+  const smtpDirty = s && saved && JSON.stringify(s.smtp) !== JSON.stringify(saved.smtp);
 
   async function smtpTest() {
     const to = prompt("Send test email to:", s.smtp.from_email || "");
@@ -102,7 +114,9 @@ export default function Settings() {
     if (!to) return;
     const tId = toast.loading("Sending sample email...");
     try {
-      const { data } = await api.post("/admin/email/send-preview", { template, to });
+      // Pass the current SMTP form values so the admin can test without
+      // clicking Save Changes first — mirrors the main SMTP test button.
+      const { data } = await api.post("/admin/email/send-preview", { template, to, smtp: s.smtp });
       toast.success(`Sample sent to ${data.to}`, { id: tId });
     } catch (err) {
       toast.error(apiErrorMessage(err, "Send failed"), { id: tId, duration: 10000 });
@@ -306,6 +320,14 @@ export default function Settings() {
       </Section>
 
       <Section title="SMTP Email Settings">
+        {smtpDirty && (
+          <div className="sm:col-span-2 rounded-xl border border-amber-500/50 bg-amber-500/10 text-amber-300 text-xs px-3 py-2.5 flex items-start gap-2" data-testid="smtp-unsaved-warning">
+            <span className="text-base leading-none">⚠️</span>
+            <div>
+              <b className="text-amber-400">Unsaved SMTP changes.</b> The test button below can verify these values, but <b>real customer emails will only start using them after you click &ldquo;Save All Changes&rdquo; at the bottom of this page.</b>
+            </div>
+          </div>
+        )}
         <Field label="Enabled"><Toggle checked={s.smtp.enabled} onChange={(v) => up("smtp.enabled", v)} label="Send transactional emails" /></Field>
         <Field label="Encryption">
           <select
