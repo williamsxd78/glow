@@ -16,6 +16,7 @@ from starlette.middleware.cors import CORSMiddleware
 
 from auth import create_token, require_admin, verify_password
 from email_util import render, send_email
+import email_templates as premium_emails
 from models import (
     AdminLogin,
     CartSession,
@@ -322,28 +323,12 @@ async def create_order(payload: OrderCreate):
     except Exception as e:
         logger.warning("cart session convert skipped: %s", e)
 
-    # Try send confirmation email with rich context including tracking link
+    # Send premium Shopify-style order confirmation email
     try:
-        tpl = s.email_templates.order_confirmation
-        base_url = (s.site_url or "").rstrip("/")
-        tracking_url = (
-            f"{base_url}/track-order?o={order.order_number}&k={order.tracking_token}"
-            if base_url
-            else f"/track-order?o={order.order_number}&k={order.tracking_token}"
+        subject, body = premium_emails.build_order_confirmation(
+            s.model_dump(), order.model_dump()
         )
-        ctx = {
-            "name": order.full_name,
-            "order_id": order.order_number,
-            "tracking_url": tracking_url,
-            "tracking_token": order.tracking_token,
-            "total": f"{order.total:.2f}",
-            "subtotal": f"{order.subtotal:.2f}",
-            "shipping": f"{order.shipping:.2f}",
-            "discount": f"{order.discount:.2f}",
-            "item_count": sum(i.quantity for i in order.items),
-        }
-        body = render(tpl.body, ctx)
-        send_email(s.smtp.model_dump(), order.email, render(tpl.subject, ctx), body)
+        send_email(s.smtp.model_dump(), order.email, subject, body)
     except Exception as e:
         logger.warning("Email send skipped: %s", e)
     return order
@@ -538,44 +523,15 @@ async def admin_list_orders(
 
 async def _send_order_status_email(order: dict, template_key: str) -> None:
     """Send a rendered transactional email for an order lifecycle transition.
-    Silently no-ops if SMTP is disabled or the template is missing."""
+    Uses the premium Shopify-style builders in email_templates.py. Silently
+    no-ops if SMTP is disabled or the builder is missing."""
     try:
         s = await get_settings_doc()
-        tpl_map = {
-            "order_confirmation": s.email_templates.order_confirmation,
-            "order_paid": s.email_templates.order_paid,
-            "order_shipped": s.email_templates.order_shipped,
-            "order_delivered": s.email_templates.order_delivered,
-            "order_cancelled": s.email_templates.order_cancelled,
-        }
-        tpl = tpl_map.get(template_key)
-        if not tpl or not order.get("email"):
+        builder = premium_emails.BUILDERS.get(template_key)
+        if not builder or not order.get("email"):
             return
-        base_url = (s.site_url or "").rstrip("/")
-        order_number = order.get("order_number") or order.get("id", "")
-        tracking_token = order.get("tracking_token", "")
-        tracking_url = (
-            f"{base_url}/track-order?o={order_number}&k={tracking_token}"
-            if base_url
-            else f"/track-order?o={order_number}&k={tracking_token}"
-        )
-        ctx = {
-            "name": order.get("full_name", ""),
-            "order_id": order_number,
-            "tracking_url": tracking_url,
-            "tracking_token": tracking_token,
-            "total": f"{float(order.get('total', 0)):.2f}",
-            "subtotal": f"{float(order.get('subtotal', 0)):.2f}",
-            "shipping": f"{float(order.get('shipping', 0)):.2f}",
-            "discount": f"{float(order.get('discount', 0)):.2f}",
-            "item_count": sum(int(i.get("quantity", 0)) for i in order.get("items", [])),
-        }
-        send_email(
-            s.smtp.model_dump(),
-            order["email"],
-            render(tpl.subject, ctx),
-            render(tpl.body, ctx),
-        )
+        subject, body = builder(s.model_dump(), order)
+        send_email(s.smtp.model_dump(), order["email"], subject, body)
     except Exception as e:
         logger.warning("Status email skipped (%s): %s", template_key, e)
 
@@ -798,6 +754,64 @@ async def admin_delete_coupon(cid: str, user=Depends(require_admin)):
 
 
 # ============================== SMTP Test ==============================
+@api.get("/admin/email/preview")
+async def admin_email_preview(template: str = "order_confirmation", user=Depends(require_admin)):
+    """Return the rendered HTML preview for a given lifecycle template using a
+    sample order + real settings so admins can see exactly what customers will
+    receive before turning on SMTP."""
+    if template not in premium_emails.BUILDERS:
+        raise HTTPException(status_code=400, detail=f"Unknown template: {template}")
+    s = await get_settings_doc()
+    settings = s.model_dump()
+    # Sample order for preview
+    sample_order = {
+        "order_number": "GC-DEMO12AB",
+        "tracking_token": "SAMPLE",
+        "full_name": "Alex Morgan",
+        "email": "alex@example.com",
+        "phone": "+1 (555) 123 4567",
+        "address": "1024 Sunset Blvd",
+        "city": "Austin",
+        "state": "TX",
+        "pincode": "78701",
+        "landmark": "",
+        "payment_method": "card",
+        "items": [{
+            "offer_key": "single",
+            "title": (settings.get("product", {}).get("name") or "GlowCamp Flame Lamp") + " · 1 Piece",
+            "quantity": 1,
+            "unit_price": 29.99,
+            "line_total": 29.99,
+        }],
+        "subtotal": 29.99,
+        "shipping": 0.0,
+        "discount": 3.00,
+        "total": 26.99,
+    }
+    builder = premium_emails.BUILDERS[template]
+    subject, html = builder(settings, sample_order)
+    return {"subject": subject, "html": html}
+
+
+@api.post("/admin/email/send-preview")
+async def admin_email_send_preview(body: dict, user=Depends(require_admin)):
+    """Actually SEND the sample rendered template to `to` — useful for verifying
+    inbox rendering across Gmail/Outlook/etc."""
+    template = body.get("template", "order_confirmation")
+    to = body.get("to", "")
+    if not to:
+        raise HTTPException(status_code=400, detail="Recipient email is required")
+    if template not in premium_emails.BUILDERS:
+        raise HTTPException(status_code=400, detail=f"Unknown template: {template}")
+    s = await get_settings_doc()
+    preview = await admin_email_preview(template=template, user=user)
+    from email_util import send_email_with_error
+    ok, err = send_email_with_error(s.smtp.model_dump(), to, preview["subject"], preview["html"])
+    if not ok:
+        raise HTTPException(status_code=400, detail=err or "SMTP failed")
+    return {"sent": True, "to": to, "template": template}
+
+
 @api.post("/admin/smtp/test")
 async def admin_smtp_test(body: dict, user=Depends(require_admin)):
     """Send a test email. Accepts optional inline `smtp` config so the admin can

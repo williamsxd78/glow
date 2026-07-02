@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { api, apiErrorMessage } from "../../lib/api";
+import { api, apiErrorMessage, API_BASE } from "../../lib/api";
 import { toast } from "sonner";
 
 function Section({ title, children }) {
@@ -68,6 +68,44 @@ export default function Settings() {
       toast.success(`Test email sent to ${data.to || to}`, { id: tId });
     } catch (err) {
       toast.error(apiErrorMessage(err, "SMTP failed"), { id: tId, duration: 10000 });
+    }
+  }
+
+  function previewTemplate(template) {
+    // Open the rendered preview in a new tab. Falls back to bearer-cookie auth
+    // via the api client so cross-domain doesn't strip auth.
+    const token = localStorage.getItem("glowcamp_admin_token") || "";
+    const url = `${API_BASE}/admin/email/preview?template=${template}`;
+    const w = window.open("", "_blank");
+    if (!w) {
+      toast.error("Please allow pop-ups to preview emails");
+      return;
+    }
+    w.document.write("<title>Loading preview…</title><p style='font-family:system-ui;padding:20px;'>Loading…</p>");
+    fetch(url, { headers: { Authorization: `Bearer ${token}` } })
+      .then((r) => r.json())
+      .then((d) => {
+        w.document.open();
+        w.document.write(d.html);
+        w.document.close();
+        w.document.title = d.subject || "Email Preview";
+      })
+      .catch(() => {
+        w.document.open();
+        w.document.write("<p style='color:red;font-family:system-ui;padding:20px;'>Failed to load preview.</p>");
+        w.document.close();
+      });
+  }
+
+  async function sendTemplateTest(template) {
+    const to = prompt(`Send a sample "${template.replace("order_", "").replace("_", " ")}" email to:`, s.smtp.from_email || "");
+    if (!to) return;
+    const tId = toast.loading("Sending sample email...");
+    try {
+      const { data } = await api.post("/admin/email/send-preview", { template, to });
+      toast.success(`Sample sent to ${data.to}`, { id: tId });
+    } catch (err) {
+      toast.error(apiErrorMessage(err, "Send failed"), { id: tId, duration: 10000 });
     }
   }
 
@@ -304,6 +342,48 @@ export default function Settings() {
         </div>
       </Section>
 
+      <Section title="Order Emails (Preview & Test)">
+        <div className="sm:col-span-2">
+          <p className="text-xs text-neutral-400 mb-3">
+            These are the premium Shopify-style emails your customers receive at each order milestone. Click <b className="text-amber-500/80">Preview</b> to open a rendered sample in a new tab, or <b className="text-amber-500/80">Send Test</b> to email yourself a real copy (requires SMTP configured above).
+          </p>
+          <div className="grid sm:grid-cols-2 gap-2">
+            {[
+              { key: "order_confirmation", label: "Order Confirmation", desc: "Sent when a customer places an order" },
+              { key: "order_paid",         label: "Payment Received",   desc: "Sent when payment status → paid" },
+              { key: "order_shipped",      label: "Order Shipped",      desc: "Sent when status → shipped / out_for_delivery" },
+              { key: "order_delivered",    label: "Order Delivered",    desc: "Sent when status → delivered" },
+              { key: "order_cancelled",    label: "Order Cancelled",    desc: "Sent when status → cancelled" },
+            ].map((t) => (
+              <div key={t.key} className="border border-ink-500/60 rounded-xl p-3 bg-[#161616]">
+                <div className="flex items-center justify-between gap-2 mb-1">
+                  <div className="text-sm font-medium text-neutral-200">{t.label}</div>
+                </div>
+                <p className="text-[11px] text-neutral-500 mb-2">{t.desc}</p>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    data-testid={`email-preview-${t.key}`}
+                    onClick={() => previewTemplate(t.key)}
+                    className="text-[11px] px-2.5 py-1 rounded border border-ink-500/70 hover:border-amber-500 hover:text-amber-500"
+                  >
+                    Preview
+                  </button>
+                  <button
+                    type="button"
+                    data-testid={`email-send-${t.key}`}
+                    onClick={() => sendTemplateTest(t.key)}
+                    className="text-[11px] px-2.5 py-1 rounded border border-ink-500/70 hover:border-amber-500 hover:text-amber-500"
+                  >
+                    Send Test
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </Section>
+
       <Section title="Cart Recovery">
         <Field label="Enabled"><Toggle checked={s.cart_recovery?.enabled} onChange={(v) => up("cart_recovery.enabled", v)} label="Auto-send abandoned cart reminders" /></Field>
         <Field label="Delay (minutes)"><input type="number" className={inputCls} value={s.cart_recovery?.delay_minutes || 35} onChange={(e) => up("cart_recovery.delay_minutes", parseInt(e.target.value) || 35)} /></Field>
@@ -313,14 +393,17 @@ export default function Settings() {
         </Field>
       </Section>
 
-      <Section title="Email Templates">
-        {["order_confirmation", "payment_confirmation", "order_shipped", "order_delivered", "order_cancelled", "cart_recovery"].map((k) => (
+      <Section title="Cart Recovery Email">
+        <p className="text-xs text-neutral-400 sm:col-span-2">
+          Sent to visitors who added items but didn&apos;t complete checkout. All other order emails use the premium Shopify-style templates above.
+        </p>
+        {["cart_recovery"].map((k) => (
           <React.Fragment key={k}>
-            <Field full label={`${k.replace(/_/g, " ").toUpperCase()} — Subject`}>
+            <Field full label="Subject">
               <input className={inputCls} value={s.email_templates[k].subject} onChange={(e) => up(`email_templates.${k}.subject`, e.target.value)} />
             </Field>
-            <Field full label={`${k.replace(/_/g, " ").toUpperCase()} — Body (HTML, supports {{name}}, {{order_id}})`}>
-              <textarea rows={3} className={inputCls} value={s.email_templates[k].body} onChange={(e) => up(`email_templates.${k}.body`, e.target.value)} />
+            <Field full label="Body (HTML, supports {{name}}, {{order_id}})">
+              <textarea rows={5} className={inputCls} value={s.email_templates[k].body} onChange={(e) => up(`email_templates.${k}.body`, e.target.value)} />
             </Field>
           </React.Fragment>
         ))}
