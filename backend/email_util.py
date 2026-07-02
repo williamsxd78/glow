@@ -113,8 +113,10 @@ def send_email_with_error(smtp_cfg: dict, to_email: str, subject: str, body_html
 
     host = smtp_cfg["host"].strip()
     port = int(smtp_cfg.get("port", 587))
-    username = smtp_cfg.get("username") or ""
-    password = smtp_cfg.get("password") or ""
+    username = (smtp_cfg.get("username") or "").strip()
+    # Gmail App Passwords are shown as 4x4 groups with spaces; users often paste
+    # them verbatim. Remove all whitespace (Gmail's own docs say to do so).
+    password = (smtp_cfg.get("password") or "").replace(" ", "").replace("\t", "").replace("\n", "").replace("\r", "")
     from_email = smtp_cfg["from_email"].strip()
     from_name = smtp_cfg.get("from_name") or "GlowCamp"
 

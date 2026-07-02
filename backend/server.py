@@ -819,9 +819,18 @@ async def admin_smtp_test(body: dict, user=Depends(require_admin)):
     saved = await get_settings_doc()
     inline = body.get("smtp") or {}
     if inline:
-        # merge saved + inline (inline wins) so admin can override just what they changed
+        # merge saved + inline. Inline wins for non-empty values; empty strings
+        # are treated as "unchanged" so we never blank out the saved password/
+        # host/username during a test. (Frontend sometimes rehydrates these as
+        # empty strings on page reloads.)
         merged = saved.smtp.model_dump()
-        merged.update({k: v for k, v in inline.items() if v is not None})
+        for k, v in inline.items():
+            if v is None:
+                continue
+            if isinstance(v, str) and v.strip() == "" and merged.get(k):
+                # keep the saved value
+                continue
+            merged[k] = v
         # For a test, force enabled=True so a "disabled" toggle doesn't block the check
         merged["enabled"] = True
         smtp_cfg = merged
@@ -831,6 +840,13 @@ async def admin_smtp_test(body: dict, user=Depends(require_admin)):
     to = body.get("to") or smtp_cfg.get("from_email")
     if not to:
         raise HTTPException(status_code=400, detail="Recipient email is required")
+
+    # Log a redacted config so admins can debug via `pm2 logs` — never log the password.
+    logger.info(
+        "SMTP test → host=%s port=%s security=%s use_tls=%s username=%s from=%s to=%s",
+        smtp_cfg.get("host"), smtp_cfg.get("port"), smtp_cfg.get("security"),
+        smtp_cfg.get("use_tls"), smtp_cfg.get("username"), smtp_cfg.get("from_email"), to,
+    )
 
     from email_util import send_email_with_error
     ok, err = send_email_with_error(
