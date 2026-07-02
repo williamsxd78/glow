@@ -157,6 +157,10 @@ class ProductInfo(BaseModel):
         "a cozy mini campfire feeling without real fire, smoke, or ash."
     )
     main_image: str = "/img/hero-flame.jpg"
+    # Additional product images shown as thumbnails on the product page and as an
+    # auto-rotating carousel on the homepage hero. Order in the array = display order.
+    # If empty, the frontend falls back to [main_image] only.
+    images: List[str] = []
     original_price: float = 59.99
     sale_price: float = 29.99
     stock: int = 187

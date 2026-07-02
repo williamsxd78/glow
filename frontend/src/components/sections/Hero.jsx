@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowRight, PlayCircle, Sparkles, Wind, Heart, Home, Boxes } from "lucide-react";
@@ -9,6 +9,28 @@ import { TID } from "../../constants/testIds";
 export default function Hero() {
   const { data: s } = useSettings();
   const nav = useNavigate();
+
+  const images = useMemo(() => {
+    if (!s?.product) return [];
+    const arr = Array.isArray(s.product.images) ? s.product.images : [];
+    const urls = arr.length ? arr : (s.product.main_image ? [s.product.main_image] : []);
+    return urls.map((u) => resolveImageUrl(u));
+  }, [s]);
+
+  const [active, setActive] = useState(0);
+
+  // Auto-advance every 3.8s when there are 2+ images. Pauses when tab is hidden.
+  useEffect(() => {
+    if (images.length < 2) return;
+    const id = setInterval(() => {
+      if (document.visibilityState !== "visible") return;
+      setActive((i) => (i + 1) % images.length);
+    }, 3800);
+    return () => clearInterval(id);
+  }, [images.length]);
+
+  useEffect(() => { setActive(0); }, [images.join("|")]);
+
   if (!s) return null;
   const p = s.product;
 
@@ -98,11 +120,45 @@ export default function Hero() {
           {/* glow halo */}
           <div className="absolute inset-12 flame-flicker" />
           <div className="absolute inset-0 rounded-full bg-gradient-to-br from-amber-500/0 via-amber-600/10 to-transparent blur-3xl" />
-          <img
-            src={resolveImageUrl(p.main_image)}
-            alt={p.name}
-            className="relative z-10 w-full h-full object-cover rounded-3xl border border-ink-500/60 floaty"
-          />
+
+          {/* Sliding image carousel */}
+          <div className="relative z-10 w-full h-full rounded-3xl border border-ink-500/60 overflow-hidden bg-[#0E0E0E]">
+            {images.length === 0 ? (
+              <div className="w-full h-full" />
+            ) : (
+              images.map((url, i) => (
+                <img
+                  key={url + i}
+                  src={url}
+                  alt={p.name}
+                  data-testid={i === active ? "hero-image" : `hero-image-${i}`}
+                  loading={i === 0 ? "eager" : "lazy"}
+                  className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-700 ease-out ${
+                    i === active ? "opacity-100" : "opacity-0"
+                  }`}
+                />
+              ))
+            )}
+          </div>
+
+          {/* Dot indicators (only when multiple images) */}
+          {images.length > 1 && (
+            <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 z-20 flex gap-1.5 bg-black/70 backdrop-blur-sm border border-ink-500/60 rounded-full px-3 py-1.5">
+              {images.map((_, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => setActive(i)}
+                  data-testid={`hero-dot-${i}`}
+                  aria-label={`Show image ${i + 1}`}
+                  className={`h-1.5 rounded-full transition-all ${
+                    i === active ? "w-6 bg-amber-500" : "w-1.5 bg-neutral-600 hover:bg-neutral-400"
+                  }`}
+                />
+              ))}
+            </div>
+          )}
+
           {/* corner badge */}
           <div className="absolute -top-2 -left-2 z-20 bg-black border border-amber-500/40 rounded-2xl px-3 py-2 text-[11px] text-amber-500 tracking-widest uppercase glow-amber-soft">
             New • 2026

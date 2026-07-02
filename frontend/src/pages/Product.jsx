@@ -49,15 +49,13 @@ export default function ProductPage() {
   const [activeImg, setActiveImg] = useState(0);
 
   const images = useMemo(() => {
-    if (!s?.product?.main_image) return [];
-    const main = { url: resolveImageUrl(s.product.main_image), alt: s.product.name };
-    // Only allow photos the admin has explicitly marked for the product
-    // (we treat the gallery as lifestyle by default and DON'T mix it into the
-    // primary product carousel — keeps the hero shot focused on the lamp).
-    return [main];
+    if (!s?.product) return [];
+    const arr = Array.isArray(s.product.images) ? s.product.images : [];
+    const urls = arr.length ? arr : (s.product.main_image ? [s.product.main_image] : []);
+    return urls.map((u) => ({ url: resolveImageUrl(u), alt: s.product.name }));
   }, [s]);
 
-  useEffect(() => { setActiveImg(0); }, [s?.product?.main_image]);
+  useEffect(() => { setActiveImg(0); }, [s?.product?.main_image, (s?.product?.images || []).join("|")]);
 
   if (!s) {
     return <div className="min-h-[60vh] flex items-center justify-center text-neutral-500">Loading…</div>;
