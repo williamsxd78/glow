@@ -125,14 +125,14 @@ async def seed_reviews(db) -> None:
 
 
 GALLERY = [
-    ("https://customer-assets.emergentagent.com/job_flame-glow-demo/artifacts/wqi3n5yz_Screenshot_20260623_123638_YouTube.jpg", "GlowCamp lamp main view"),
-    ("https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80", "Lamp in cozy reading nook"),
-    ("https://images.pexels.com/photos/26535233/pexels-photo-26535233.jpeg", "Lamp on bedside table"),
-    ("https://images.unsplash.com/photo-1542372147193-a7aca54189cd?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA2ODl8MHwxfHNlYXJjaHwxfHxkYXJrJTIwbW9vZHklMjBjYWZlJTIwdGFibGV8ZW58MHx8fHwxNzgyMTk5MDcyfDA&ixlib=rb-4.1.0&q=85", "Lamp on cafe table"),
-    ("https://images.pexels.com/photos/6489045/pexels-photo-6489045.jpeg", "Lamp on dark gaming desk"),
-    ("https://images.unsplash.com/photo-1543083477-4f785aeafaa9?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80", "Romantic dinner setup"),
-    ("https://images.unsplash.com/photo-1583847268964-b28dc8f51f92?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80", "Living room shelf at night"),
-    ("https://images.unsplash.com/photo-1545389336-cf090694435e?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80", "Meditation space"),
+    ("/img/hero-flame.jpg", "GlowCamp lamp main view"),
+    ("/img/gallery-1.jpg", "Lamp in cozy reading nook"),
+    ("/img/gallery-2.jpg", "Lamp on bedside table"),
+    ("/img/gallery-3.jpg", "Lamp on cafe table"),
+    ("/img/gallery-4.jpg", "Lamp on dark gaming desk"),
+    ("/img/gallery-5.jpg", "Romantic dinner setup"),
+    ("/img/gallery-6.jpg", "Living room shelf at night"),
+    ("/img/gallery-7.jpg", "Meditation space"),
 ]
 
 
@@ -164,3 +164,59 @@ async def run_all_seeds(db) -> None:
     await seed_reviews(db)
     await seed_gallery(db)
     await seed_coupons(db)
+    await migrate_external_images(db)
+
+
+# ---------- One-shot migration: replace external image URLs with same-origin /img/* paths ----------
+# External CDNs (unsplash / pexels / customer-assets.emergentagent.com) can be blocked by ISPs,
+# corporate networks or adblockers — leading to blank images on some visitors' devices.
+# Once these are baked into /app/frontend/public/img/, we point the DB at same-origin paths so
+# every visitor of glowcamp.store sees the images regardless of network.
+_LEGACY_HOSTS = (
+    "customer-assets.emergentagent.com",
+    "images.unsplash.com",
+    "images.pexels.com",
+)
+
+_URL_MAP = {
+    "https://customer-assets.emergentagent.com/job_flame-glow-demo/artifacts/wqi3n5yz_Screenshot_20260623_123638_YouTube.jpg": "/img/hero-flame.jpg",
+    "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80": "/img/gallery-1.jpg",
+    "https://images.pexels.com/photos/26535233/pexels-photo-26535233.jpeg": "/img/gallery-2.jpg",
+    "https://images.unsplash.com/photo-1542372147193-a7aca54189cd?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA2ODl8MHwxfHNlYXJjaHwxfHxkYXJrJTIwbW9vZHklMjBjYWZlJTIwdGFibGV8ZW58MHx8fHwxNzgyMTk5MDcyfDA&ixlib=rb-4.1.0&q=85": "/img/gallery-3.jpg",
+    "https://images.pexels.com/photos/6489045/pexels-photo-6489045.jpeg": "/img/gallery-4.jpg",
+    "https://images.unsplash.com/photo-1543083477-4f785aeafaa9?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80": "/img/gallery-5.jpg",
+    "https://images.unsplash.com/photo-1583847268964-b28dc8f51f92?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80": "/img/gallery-6.jpg",
+    "https://images.unsplash.com/photo-1545389336-cf090694435e?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80": "/img/gallery-7.jpg",
+}
+
+
+def _remap(url: str) -> str:
+    if not url or not isinstance(url, str):
+        return url
+    if url in _URL_MAP:
+        return _URL_MAP[url]
+    # Any other legacy CDN URL falls back to hero
+    if any(host in url for host in _LEGACY_HOSTS):
+        return "/img/hero-flame.jpg"
+    return url
+
+
+async def migrate_external_images(db) -> None:
+    """Rewrite legacy external image URLs stored in Mongo to same-origin /img/* paths."""
+    # 1. Gallery
+    async for doc in db.gallery.find({}):
+        old = doc.get("url", "")
+        new = _remap(old)
+        if new != old:
+            await db.gallery.update_one({"_id": doc["_id"]}, {"$set": {"url": new}})
+
+    # 2. Settings.product.main_image
+    settings = await db.settings.find_one({"id": "global"})
+    if settings:
+        product = settings.get("product") or {}
+        old = product.get("main_image", "")
+        new = _remap(old)
+        if new != old:
+            await db.settings.update_one(
+                {"id": "global"}, {"$set": {"product.main_image": new}}
+            )

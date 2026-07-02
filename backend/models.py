@@ -156,7 +156,7 @@ class ProductInfo(BaseModel):
         "A 3D printed flame-shaped lamp with a warm inner bulb glow, designed to create "
         "a cozy mini campfire feeling without real fire, smoke, or ash."
     )
-    main_image: str = "https://customer-assets.emergentagent.com/job_flame-glow-demo/artifacts/wqi3n5yz_Screenshot_20260623_123638_YouTube.jpg"
+    main_image: str = "/img/hero-flame.jpg"
     original_price: float = 59.99
     sale_price: float = 29.99
     stock: int = 187
