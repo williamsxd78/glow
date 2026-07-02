@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, ShoppingBag, Star, HelpCircle, Image as ImgIcon, Settings as SettingsIcon, Package, LogOut, Tag } from "lucide-react";
+import { LayoutDashboard, ShoppingBag, Star, HelpCircle, Image as ImgIcon, Home as HomeIcon, Settings as SettingsIcon, Package, LogOut, Tag } from "lucide-react";
 import { api } from "../../lib/api";
 import { adminPath } from "../../lib/adminBase";
 import { FlameMark } from "../../components/FlameLogo";
@@ -13,8 +13,9 @@ const NAV = [
   { to: adminPath("coupons"),  label: "Coupons",   icon: Tag },
   { to: adminPath("reviews"),  label: "Reviews",   icon: Star },
   { to: adminPath("faqs"),     label: "FAQs",      icon: HelpCircle },
-  { to: adminPath("gallery"),  label: "Gallery",   icon: ImgIcon },
-  { to: adminPath("settings"), label: "Settings",  icon: SettingsIcon },
+  { to: adminPath("gallery"),   label: "Gallery",   icon: ImgIcon },
+  { to: adminPath("lifestyle"), label: "Lifestyle", icon: HomeIcon },
+  { to: adminPath("settings"),  label: "Settings",  icon: SettingsIcon },
 ];
 
 export default function AdminLayout() {

@@ -144,6 +144,30 @@ async def seed_gallery(db) -> None:
     await db.gallery.insert_many(docs)
 
 
+LIFESTYLE = [
+    ("/img/gallery-2.jpg", "Bedroom Night Glow"),
+    ("/img/gallery-3.jpg", "Café Table Decor"),
+    ("/img/gallery-6.jpg", "Living Room Corner"),
+    ("/img/gallery-1.jpg", "Reading Nook"),
+    ("/img/gallery-5.jpg", "Romantic Setup"),
+    ("/img/gallery-4.jpg", "Desk Ambience"),
+    ("/img/hero-flame.jpg", "Shop Counter"),
+    ("/img/gallery-7.jpg", "Meditation Corner"),
+]
+
+
+async def seed_lifestyle(db) -> None:
+    from models import LifestyleItem
+    count = await db.lifestyle.count_documents({})
+    if count > 0:
+        return
+    docs = [
+        LifestyleItem(url=u, title=t, order=i).model_dump()
+        for i, (u, t) in enumerate(LIFESTYLE)
+    ]
+    await db.lifestyle.insert_many(docs)
+
+
 async def seed_coupons(db) -> None:
     count = await db.coupons.count_documents({})
     if count > 0:
@@ -163,6 +187,7 @@ async def run_all_seeds(db) -> None:
     await seed_faqs(db)
     await seed_reviews(db)
     await seed_gallery(db)
+    await seed_lifestyle(db)
     await seed_coupons(db)
     await migrate_external_images(db)
 

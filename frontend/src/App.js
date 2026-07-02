@@ -29,6 +29,7 @@ import Gallery from "@/pages/admin/Gallery";
 import Settings from "@/pages/admin/Settings";
 import ProductPage from "@/pages/admin/Product";
 import Coupons from "@/pages/admin/Coupons";
+import LifestyleAdmin from "@/pages/admin/Lifestyle";
 
 import "@/App.css";
 
@@ -84,6 +85,7 @@ export default function App() {
             <Route path="reviews" element={<Reviews />} />
             <Route path="faqs" element={<Faqs />} />
             <Route path="gallery" element={<Gallery />} />
+            <Route path="lifestyle" element={<LifestyleAdmin />} />
             <Route path="settings" element={<Settings />} />
           </Route>
         </Routes>

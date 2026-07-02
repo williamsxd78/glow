@@ -433,6 +433,21 @@ class GalleryItem(BaseModel):
     order: int = 0
 
 
+# ---------- Lifestyle (Where it looks beautiful) ----------
+class LifestyleCreate(BaseModel):
+    url: str
+    title: str = ""
+    order: int = 0
+
+
+class LifestyleItem(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=_id)
+    url: str
+    title: str = ""
+    order: int = 0
+
+
 
 # ============================== Analytics ==============================
 class PageViewCreate(BaseModel):

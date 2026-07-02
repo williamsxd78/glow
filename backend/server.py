@@ -27,6 +27,8 @@ from models import (
     Faq,
     GalleryCreate,
     GalleryItem,
+    LifestyleCreate,
+    LifestyleItem,
     LiveAnalytics,
     Order,
     OrderCreate,
@@ -214,6 +216,12 @@ async def list_faqs():
 async def list_gallery():
     docs = await db.gallery.find({}, {"_id": 0}).sort("order", 1).to_list(200)
     return [GalleryItem(**d) for d in docs]
+
+
+@api.get("/lifestyle", response_model=List[LifestyleItem])
+async def list_lifestyle():
+    docs = await db.lifestyle.find({}, {"_id": 0}).sort("order", 1).to_list(200)
+    return [LifestyleItem(**d) for d in docs]
 
 
 @api.post("/orders", response_model=Order)
@@ -652,6 +660,34 @@ async def admin_update_gallery(gid: str, payload: dict, user=Depends(require_adm
 @api.delete("/admin/gallery/{gid}")
 async def admin_delete_gallery(gid: str, user=Depends(require_admin)):
     await db.gallery.delete_one({"id": gid})
+    return {"ok": True}
+
+
+# ============================== Admin Lifestyle ==============================
+@api.post("/admin/lifestyle", response_model=LifestyleItem)
+async def admin_create_lifestyle(payload: LifestyleCreate, user=Depends(require_admin)):
+    item = LifestyleItem(**payload.model_dump())
+    await db.lifestyle.insert_one(item.model_dump())
+    return item
+
+
+@api.get("/admin/lifestyle")
+async def admin_list_lifestyle(user=Depends(require_admin)):
+    return await db.lifestyle.find({}, {"_id": 0}).sort("order", 1).to_list(500)
+
+
+@api.put("/admin/lifestyle/{lid}", response_model=LifestyleItem)
+async def admin_update_lifestyle(lid: str, payload: dict, user=Depends(require_admin)):
+    await db.lifestyle.update_one({"id": lid}, {"$set": payload})
+    doc = await db.lifestyle.find_one({"id": lid}, {"_id": 0})
+    if not doc:
+        raise HTTPException(status_code=404, detail="not found")
+    return LifestyleItem(**doc)
+
+
+@api.delete("/admin/lifestyle/{lid}")
+async def admin_delete_lifestyle(lid: str, user=Depends(require_admin)):
+    await db.lifestyle.delete_one({"id": lid})
     return {"ok": True}
 
 
