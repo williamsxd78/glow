@@ -536,20 +536,86 @@ async def admin_list_orders(
     return docs
 
 
+async def _send_order_status_email(order: dict, template_key: str) -> None:
+    """Send a rendered transactional email for an order lifecycle transition.
+    Silently no-ops if SMTP is disabled or the template is missing."""
+    try:
+        s = await get_settings_doc()
+        tpl_map = {
+            "order_confirmation": s.email_templates.order_confirmation,
+            "order_paid": s.email_templates.order_paid,
+            "order_shipped": s.email_templates.order_shipped,
+            "order_delivered": s.email_templates.order_delivered,
+            "order_cancelled": s.email_templates.order_cancelled,
+        }
+        tpl = tpl_map.get(template_key)
+        if not tpl or not order.get("email"):
+            return
+        base_url = (s.site_url or "").rstrip("/")
+        order_number = order.get("order_number") or order.get("id", "")
+        tracking_token = order.get("tracking_token", "")
+        tracking_url = (
+            f"{base_url}/track-order?o={order_number}&k={tracking_token}"
+            if base_url
+            else f"/track-order?o={order_number}&k={tracking_token}"
+        )
+        ctx = {
+            "name": order.get("full_name", ""),
+            "order_id": order_number,
+            "tracking_url": tracking_url,
+            "tracking_token": tracking_token,
+            "total": f"{float(order.get('total', 0)):.2f}",
+            "subtotal": f"{float(order.get('subtotal', 0)):.2f}",
+            "shipping": f"{float(order.get('shipping', 0)):.2f}",
+            "discount": f"{float(order.get('discount', 0)):.2f}",
+            "item_count": sum(int(i.get("quantity", 0)) for i in order.get("items", [])),
+        }
+        send_email(
+            s.smtp.model_dump(),
+            order["email"],
+            render(tpl.subject, ctx),
+            render(tpl.body, ctx),
+        )
+    except Exception as e:
+        logger.warning("Status email skipped (%s): %s", template_key, e)
+
+
+# Map order.status transitions → which template to send
+_STATUS_TO_TEMPLATE = {
+    "shipped": "order_shipped",
+    "out_for_delivery": "order_shipped",
+    "delivered": "order_delivered",
+    "cancelled": "order_cancelled",
+}
+
+
 @api.put("/admin/orders/{order_id}/status")
 async def admin_update_order_status(order_id: str, body: dict, user=Depends(require_admin)):
     new_status = body.get("status")
     note = body.get("note", "")
     if not new_status:
         raise HTTPException(status_code=400, detail="status required")
+
+    # Read previous status so we only fire the email on an actual transition
+    existing = await db.orders.find_one({"id": order_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Order not found")
+    prev_status = existing.get("status")
+
     event = OrderTimelineEvent(status=new_status, note=note).model_dump()
-    res = await db.orders.update_one(
+    await db.orders.update_one(
         {"id": order_id},
         {"$set": {"status": new_status}, "$push": {"timeline": event}},
     )
-    if res.matched_count == 0:
-        raise HTTPException(status_code=404, detail="Order not found")
-    return await db.orders.find_one({"id": order_id}, {"_id": 0})
+    updated = await db.orders.find_one({"id": order_id}, {"_id": 0})
+
+    # Fire lifecycle email if this status has a template mapping and status actually changed.
+    if new_status != prev_status:
+        tpl_key = _STATUS_TO_TEMPLATE.get(new_status)
+        if tpl_key:
+            await _send_order_status_email(updated, tpl_key)
+
+    return updated
 
 
 @api.put("/admin/orders/{order_id}/payment")
@@ -557,9 +623,15 @@ async def admin_update_payment_status(order_id: str, body: dict, user=Depends(re
     new_status = body.get("payment_status")
     if not new_status:
         raise HTTPException(status_code=400, detail="payment_status required")
-    res = await db.orders.update_one({"id": order_id}, {"$set": {"payment_status": new_status}})
-    if res.matched_count == 0:
+    existing = await db.orders.find_one({"id": order_id}, {"_id": 0})
+    if not existing:
         raise HTTPException(status_code=404, detail="Order not found")
+    prev = existing.get("payment_status")
+    await db.orders.update_one({"id": order_id}, {"$set": {"payment_status": new_status}})
+    # Send "payment received" email once when moving to paid
+    if new_status == "paid" and prev != "paid":
+        updated = await db.orders.find_one({"id": order_id}, {"_id": 0})
+        await _send_order_status_email(updated, "order_paid")
     return {"ok": True}
 
 
